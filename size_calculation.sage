@@ -3,19 +3,13 @@ from numpy import poly
 import sage.rings
 from sage.symbolic.expression_conversions import polynomial
 
-#=============================#
-# Linear Algebra Calculations #
-#=============================#
+#================================#
+# Helper/Conversion Functions #
+#================================#
 
-# Basis for GF(2)^6
-x_vec = vector([1,0,0,0,0,0])
-y_vec = vector([0,1,0,0,0,0])
-z_vec = vector([0,0,1,0,0,0])
-u_vec = vector([0,0,0,1,0,0])
-v_vec = vector([0,0,0,0,1,0])
-w_vec = vector([0,0,0,0,0,1])
-
-# Converts a Vector in GF(2)^6 into an expression in 6 variables
+# Converts a Vector in GF(2)^6 to a symbolic expression in 6 variables
+#
+# Return type - sage.symbolic.expression.Expression
 def vec_to_expr(V):
     e = 0
     for i in range(6):
@@ -34,7 +28,31 @@ def vec_to_expr(V):
                 e = e + w
     return e
 
+# Converts a symbolic expression to a polynomial
+#
+# Return type - sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular
+def convert_to_poly(v):
+    p = polynomial(v, base_ring=GF(2))
+    print(type(p))
+    return p
+
+#=============================#
+# Linear Algebra Calculations #
+#=============================#
+
+# Standard basis for GF(2)^6
+x_vec = vector([1,0,0,0,0,0])
+y_vec = vector([0,1,0,0,0,0])
+z_vec = vector([0,0,1,0,0,0])
+u_vec = vector([0,0,0,1,0,0])
+v_vec = vector([0,0,0,0,1,0])
+w_vec = vector([0,0,0,0,0,1])
+
+# Act on a cubic homogenous poly by a matrix in GL(6, GF(2))
+# 
+# Return type - sage.symbolic.expression.Expression
 def act_on(M, V):
+    # Act M on a basis in GF(2)^6
     x2 = vec_to_expr(M*x_vec)
     y2 = vec_to_expr(M*y_vec)
     z2 = vec_to_expr(M*z_vec)
@@ -42,6 +60,7 @@ def act_on(M, V):
     v2 = vec_to_expr(M*v_vec)
     w2 = vec_to_expr(M*w_vec)
 
+    # Substitute for symbols in given expression
     V = V.subs(x == x2)
     V = V.subs(y == y2)
     V = V.subs(z == z2)
@@ -49,12 +68,9 @@ def act_on(M, V):
     V = V.subs(v == v2)
     V = V.subs(w == w2)
 
+    # Expand and simplify final expression to get this as a lienear
+    # combination of cubic monomials
     return V.expand().simplify()
-
-def convert_to_poly(v):
-    p = polynomial(v, base_ring=GF(2))
-    return p
-    
 
 #================================#
 # Basis of Momonials Calculation #
@@ -79,47 +95,47 @@ for i in monomials([x,y,z,u,v,w], [4,4,4,4,4,4]):
         monomial_expr.append(i(x=x,y=y,z=z,u=u,v=v,w=w))
         monomial_poly.append(convert_to_poly(i(x=x,y=y,z=z,u=u,v=v,w=w)))
 
+#===============================#
+#      Matrix Calculations      #
+#===============================#
 
-#================================#
-#      Matrix Calculations       #
-#================================#
-
+# Inserts a vector into the matrix at row i
 def insert_vector(M, v, i):
     M = M.insert_row(i, v)
     M = M.delete_rows([i+1])
     return M
 
-#General linear group
+# General linear group
 G = GL(6, GF(2))
 
-def convert_to_56_basis(v):
+# Converts a cubic homogenous equation as a polynomial
+# to a vector in GF(2)^56
+def convert_to_vec(v):
     vec = vector([0]*56)
     for i in v.monomials():
         vec[monomial_poly.index(i)] = 1
     return vec
-        
 
-def convert_to_56(g):
+# Converts a matrix in GL(6, GF(2)) to its induced matrix in GL(56, GF(2))
+def convert_to_56(m):
     M = matrix.identity(56)
-    col = 0
+    row = 0
     for i in monomial_expr:
-        v = convert_to_56_basis(convert_to_poly(act_on(g, i)))
-        M = insert_vector(M, v, col)
-        col = col + 1
+        v = convert_to_vec(convert_to_poly(act_on(m, i)))
+        M = insert_vector(M, v, row)
+        row = row + 1
     return M
 
-matrices = []
-
-
-
-def compute_num_iso_classes():
+# Solves burnside equation to find number of orbits
+def burnside_eqn():
     sum = 0
     ord = G.order()
-    print(ord)
+
     for m in G.conjugacy_classes_representatives():
         mat = convert_to_56(m) - matrix.identity(GF(2), 56)
         sum = sum + (2^(kernel(mat).dimension()))*G.conjugacy_class(m).cardinality()
-    print(floor(sum/ord))
 
-compute_num_iso_classes()
+    return(floor(sum/ord))
+
+print(burnside_eqn())
 
