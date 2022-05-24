@@ -34,36 +34,11 @@ def vec_to_expr(V):
                 e = e + w
     return e
 
-# Act on a cubic homogenous poly by a matrix in GL(6, GF(2))
-# 
-# Return type - sage.symbolic.expression.Expression
-def act_on(M, V):
-    # Act M on a basis in GF(2)^6
-    x2 = vec_to_expr(M*x_vec)
-    y2 = vec_to_expr(M*y_vec)
-    z2 = vec_to_expr(M*z_vec)
-    u2 = vec_to_expr(M*u_vec)
-    v2 = vec_to_expr(M*v_vec)
-    w2 = vec_to_expr(M*w_vec)
-
-    # Substitute for symbols in given expression
-    V = V.subs(x == x2)
-    V = V.subs(y == y2)
-    V = V.subs(z == z2)
-    V = V.subs(u == u2)
-    V = V.subs(v == v2)
-    V = V.subs(w == w2)
-
-    # Expand and simplify final expression to get this as a lienear
-    # combination of cubic monomials
-    return V.expand().simplify()
-
 # Converts a symbolic expression to a polynomial
 #
-# Return type - 
+# Return type - sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular
 def convert_to_poly(v):
     p = polynomial(v, base_ring=GF(_sage_const_2 ))
-    print(type(p))
     return p
 
 #=============================#
@@ -77,6 +52,25 @@ z_vec = vector([_sage_const_0 ,_sage_const_0 ,_sage_const_1 ,_sage_const_0 ,_sag
 u_vec = vector([_sage_const_0 ,_sage_const_0 ,_sage_const_0 ,_sage_const_1 ,_sage_const_0 ,_sage_const_0 ])
 v_vec = vector([_sage_const_0 ,_sage_const_0 ,_sage_const_0 ,_sage_const_0 ,_sage_const_1 ,_sage_const_0 ])
 w_vec = vector([_sage_const_0 ,_sage_const_0 ,_sage_const_0 ,_sage_const_0 ,_sage_const_0 ,_sage_const_1 ])
+
+# Act on a cubic homogenous poly by a matrix in GL(6, GF(2))
+# 
+# Return type - sage.symbolic.expression.Expression
+def act_on(M, vec):
+    # Act M on a basis in GF(2)^6
+    x2 = vec_to_expr(M*x_vec)
+    y2 = vec_to_expr(M*y_vec)
+    z2 = vec_to_expr(M*z_vec)
+    u2 = vec_to_expr(M*u_vec)
+    v2 = vec_to_expr(M*v_vec)
+    w2 = vec_to_expr(M*w_vec)
+
+    # Substitute for symbols in given expression
+    vec = vec.subs(x == x2, y == y2, z == z2, u == u2, v == v2, w == w2)
+
+    # Expand and simplify final expression to get this as a linear
+    # combination of cubic monomials
+    return vec.expand().simplify()
 
 #================================#
 # Basis of Momonials Calculation #
@@ -94,55 +88,54 @@ def total_degree(f):
     return f.degree(x) + f.degree(y) + f.degree(z) + f.degree(u) + f.degree(v) + f.degree(w)
 
 x,y,z,u,v,w = var('x,y,z,u,v,w')
-
 #Extract monomials of degree 3
 for i in monomials([x,y,z,u,v,w], [_sage_const_4 ,_sage_const_4 ,_sage_const_4 ,_sage_const_4 ,_sage_const_4 ,_sage_const_4 ]):
     if (total_degree(i) == _sage_const_3 ):
         monomial_expr.append(i(x=x,y=y,z=z,u=u,v=v,w=w))
         monomial_poly.append(convert_to_poly(i(x=x,y=y,z=z,u=u,v=v,w=w)))
 
+#===============================#
+#      Matrix Calculations      #
+#===============================#
 
-#================================#
-#      Matrix Calculations       #
-#================================#
-
-def insert_vector(M, v, i):
-    M = M.insert_row(i, v)
+# Inserts a vector into the matrix at row i
+def insert_vector(M, vec, i):
+    M = M.insert_row(i, vec)
     M = M.delete_rows([i+_sage_const_1 ])
     return M
 
-#General linear group
+# General linear group
 G = GL(_sage_const_6 , GF(_sage_const_2 ))
 
-def convert_to_56_basis(v):
+# Converts a cubic homogenous equation as a polynomial
+# to a vector in GF(2)^56
+def convert_to_vec(p):
     vec = vector([_sage_const_0 ]*_sage_const_56 )
-    for i in v.monomials():
+    for i in p.monomials():
         vec[monomial_poly.index(i)] = _sage_const_1 
     return vec
-        
 
-def convert_to_56(g):
-    M = matrix.identity(_sage_const_56 )
-    col = _sage_const_0 
+# Converts a matrix in GL(6, GF(2)) to its induced matrix in GL(56, GF(2))
+def convert_to_56(m):
+    mat = matrix.identity(_sage_const_56 )
+    row = _sage_const_0 
     for i in monomial_expr:
-        v = convert_to_56_basis(convert_to_poly(act_on(g, i)))
-        M = insert_vector(M, v, col)
-        col = col + _sage_const_1 
-    return M
+        vec = convert_to_vec(convert_to_poly(act_on(m, i)))
+        mat = insert_vector(mat, vec, row)
+        row = row + _sage_const_1 
+    return mat
 
-matrices = []
-
-
-
-def compute_num_iso_classes():
+# Solves burnside equation to find number of orbits
+def burnside_eqn():
     sum = _sage_const_0 
     ord = G.order()
-    print(ord)
+
     for m in G.conjugacy_classes_representatives():
         mat = convert_to_56(m) - matrix.identity(GF(_sage_const_2 ), _sage_const_56 )
         sum = sum + (_sage_const_2 **(kernel(mat).dimension()))*G.conjugacy_class(m).cardinality()
-    print(floor(sum/ord))
 
-compute_num_iso_classes()
+    return(floor(sum/ord))
+
+print(burnside_eqn())
 
 

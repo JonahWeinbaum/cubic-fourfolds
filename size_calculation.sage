@@ -33,7 +33,6 @@ def vec_to_expr(V):
 # Return type - sage.rings.polynomial.multi_polynomial_libsingular.MPolynomial_libsingular
 def convert_to_poly(v):
     p = polynomial(v, base_ring=GF(2))
-    print(type(p))
     return p
 
 #=============================#
@@ -51,7 +50,7 @@ w_vec = vector([0,0,0,0,0,1])
 # Act on a cubic homogenous poly by a matrix in GL(6, GF(2))
 # 
 # Return type - sage.symbolic.expression.Expression
-def act_on(M, V):
+def act_on(M, vec):
     # Act M on a basis in GF(2)^6
     x2 = vec_to_expr(M*x_vec)
     y2 = vec_to_expr(M*y_vec)
@@ -61,16 +60,11 @@ def act_on(M, V):
     w2 = vec_to_expr(M*w_vec)
 
     # Substitute for symbols in given expression
-    V = V.subs(x == x2)
-    V = V.subs(y == y2)
-    V = V.subs(z == z2)
-    V = V.subs(u == u2)
-    V = V.subs(v == v2)
-    V = V.subs(w == w2)
+    vec = vec.subs(x == x2, y == y2, z == z2, u == u2, v == v2, w == w2)
 
-    # Expand and simplify final expression to get this as a lienear
+    # Expand and simplify final expression to get this as a linear
     # combination of cubic monomials
-    return V.expand().simplify()
+    return vec.expand().simplify()
 
 #================================#
 # Basis of Momonials Calculation #
@@ -88,7 +82,6 @@ def total_degree(f):
     return f.degree(x) + f.degree(y) + f.degree(z) + f.degree(u) + f.degree(v) + f.degree(w)
 
 x,y,z,u,v,w = var('x,y,z,u,v,w')
-
 #Extract monomials of degree 3
 for i in monomials([x,y,z,u,v,w], [4,4,4,4,4,4]):
     if (total_degree(i) == 3):
@@ -100,8 +93,8 @@ for i in monomials([x,y,z,u,v,w], [4,4,4,4,4,4]):
 #===============================#
 
 # Inserts a vector into the matrix at row i
-def insert_vector(M, v, i):
-    M = M.insert_row(i, v)
+def insert_vector(M, vec, i):
+    M = M.insert_row(i, vec)
     M = M.delete_rows([i+1])
     return M
 
@@ -110,21 +103,21 @@ G = GL(6, GF(2))
 
 # Converts a cubic homogenous equation as a polynomial
 # to a vector in GF(2)^56
-def convert_to_vec(v):
+def convert_to_vec(p):
     vec = vector([0]*56)
-    for i in v.monomials():
+    for i in p.monomials():
         vec[monomial_poly.index(i)] = 1
     return vec
 
 # Converts a matrix in GL(6, GF(2)) to its induced matrix in GL(56, GF(2))
 def convert_to_56(m):
-    M = matrix.identity(56)
+    mat = matrix.identity(56)
     row = 0
     for i in monomial_expr:
-        v = convert_to_vec(convert_to_poly(act_on(m, i)))
-        M = insert_vector(M, v, row)
+        vec = convert_to_vec(convert_to_poly(act_on(m, i)))
+        mat = insert_vector(mat, vec, row)
         row = row + 1
-    return M
+    return mat
 
 # Solves burnside equation to find number of orbits
 def burnside_eqn():
