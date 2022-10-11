@@ -124,7 +124,7 @@ unsigned** read_table(int size1, int size2, std::string fname){
   return table;
 }
 
-
+/*
 unsigned*** read_table(int size1, int size2, int size3, std::string fname){
 
   unsigned*** table = new unsigned**[size1];
@@ -152,9 +152,9 @@ unsigned*** read_table(int size1, int size2, int size3, std::string fname){
   file.close();
   return table;
 }
+*/
 
 
-/*
 unsigned*** read_table(int size1, int size2, int size3, std::string fname){
 
   // Extract data from file.
@@ -169,13 +169,13 @@ unsigned*** read_table(int size1, int size2, int size3, std::string fname){
   for (unsigned i = 0; i < size1; i++) {
     table[i] = new unsigned*[size2];
     for (unsigned j = 0; j < size2; j++) {
-      table[i][j] = (unsigned*)(&blah + M);
-      M += size1 * size2;
+      table[i][j] = (unsigned *)(blah + M);
+      M += size3;
     }
   }
   return table;
 }
-*/
+
 
 /////////////////
 // Testing
@@ -213,7 +213,7 @@ int test_1_table(unsigned* table, int size1) {
 
   for (int i = 0; i < size1; i++)
     if (table[i] != new_table[i])
-      std::cerr << i << " " << table[i] << " " << new_table[i];
+      std::cerr << i << " " << table[i] << " " << new_table[i] << std::endl;
 
   return 0;
 }
@@ -225,7 +225,7 @@ int test_2_table(unsigned** table, int size1, int size2) {
   for (int i = 0; i < size1; i++)
     for (int j = 0; j < size2; j++)
       if (table[i][j] != new_table[i][j])
-	std::cerr << i << " " << j << " " << table[i][j] << " " << new_table[i][j];
+	std::cerr << i << " " << j << " " << table[i][j] << " " << new_table[i][j] << std::endl;
 
   return 0;
 }
@@ -239,7 +239,7 @@ int test_3_table(unsigned*** table, int size1, int size2, int size3) {
     for (int j = 0; j < size2; j++)
       for (int k = 0; k < size3; k++)
 	if (table[i][j][k] != new_table[i][j][k])
-	  std::cerr << i << " " << j << " " << k << " " << table[i][j][k] << " " << new_table[i][j][k];
+	  std::cerr << i << " " << j << " " << k << " " << table[i][j][k] << " " << new_table[i][j][k] << std::endl;
 
   return 0;
 }
