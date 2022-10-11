@@ -3,3 +3,7 @@
 *.out
 coeffs.h
 *.sig
+test
+example16.txt
+test_bigger
+fqtables
