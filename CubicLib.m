@@ -172,8 +172,8 @@ end intrinsic;
 intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
 {}
     Write(DATA_DIRECTORY * CUBIC_ID_FILE, Sprintf("%o", i));
-    Write(DATA_DIRECTORY * ISSMOOTH_FILE, issmooth);
-    Write(DATA_DIRECTORY * POINT_COUNTS_FILE, pointcounts);    
+    Write(DATA_DIRECTORY * ISSMOOTH_FILE, Sprintf("%o, %o", i, issmooth));
+    Write(DATA_DIRECTORY * POINT_COUNTS_FILE, Sprintf("%o, %o", i, pointcounts));    
     return 0;
 end intrinsic;
 
