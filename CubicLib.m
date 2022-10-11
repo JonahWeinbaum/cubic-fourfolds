@@ -169,9 +169,9 @@ end intrinsic;
 // 4. Set of lines on it.
 // 5. Set of planes on it.
 
-intrinsic WriteZetaData(i, j, issmooth, pointcounts) -> RngIntElt
+intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
 {}
-    Write(DATA_DIRECTORY * CUBIC_ID_FILE, Sprintf("%o,%o", i, j));    
+    Write(DATA_DIRECTORY * CUBIC_ID_FILE, Sprintf("%o", i));
     Write(DATA_DIRECTORY * ISSMOOTH_FILE, issmooth);
     Write(DATA_DIRECTORY * POINT_COUNTS_FILE, pointcounts);    
     return 0;

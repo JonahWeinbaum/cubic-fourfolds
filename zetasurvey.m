@@ -4,18 +4,20 @@ port := 10000;
 Attach("CubicLib.m");
 
 // Set test flag.
-PARALLEL_MODE := false;
+PARALLEL_MODE := true;
 
 if PARALLEL_MODE then
     AttachSpec("~/magma-parallel-cookbook/spec");
     socket := Socket(: LocalHost := "localhost", LocalPort := 10000);
 
     // Load database
-    orbdata := LoadCubicOrbitData(: Flat:=true); // 2 minute load.
+    //orbdata := LoadCubicOrbitData(: Flat:=true); // 2 minute load.
 
     // Launch!
+    orbzip := [<orbdata[i], i> : i in [1..#orbdata]];
+    
     StartDistributedWorkers("zeta-worker.m", 40);
-    results := DistributedManager(socket, orblist);
+    results := DistributedManager(socket, orbzip[1..20]);
 
     print "";
     
@@ -27,7 +29,7 @@ else
     // load "computecharpoly.m";
     orbdata := LoadCubicOrbitData(: Flat:=false); // 2 minute load.
 
-    for i in [1..85] do
+    for i in [1..20] do
         for j in [1..1] do
             b := orbdata[i][j]; // For example;
 

@@ -6,12 +6,15 @@ Attach("CubicLib.m");
 load "computecharpoly.m"; // 2 minutes load.
 
 
-function ReportPointCounts(cubic_blist)
+function ReportPointCounts(tuple)
 
-    f := b @@ Bit;
+    index := tuple[2];
+    blist := tuple[1];
+    
+    f := BitListToCubic(blist);
     try
 	a := PointCounts(f);
-	WriteZetaData(i, 1, IsSmooth(f), a);
+	WriteZetaData(index, IsSmooth(f), a);
     catch e
 	print e;
     end try;
