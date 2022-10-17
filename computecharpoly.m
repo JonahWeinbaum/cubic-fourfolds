@@ -131,7 +131,7 @@ end function;
 
 // Start with a smooth cubic fourfold with polynomial f;
 
-function PointCounts(cubic)
+function PointCounts(cubic, index)
 
     // b := Reverse([Integers() ! Bit(cubic)[i] : i in [1..56]]);
     // n := Seqint(b, 2);
@@ -221,10 +221,15 @@ function PointCounts(cubic)
 
     Write(fname, string : Overwrite);
 
-    System("g++ -O3 count.cpp");
+    execFile := Sprintf("a.%o.out", index);
+    compileString := Sprintf("g++ -O3 tableio.cpp count.cpp -o %o", execFile);
+    System(compileString);
 
-    point_counts := [StringToInteger(Read(POpen("./a.out " cat Sprint(m), "r"))) : m in [1..11]];
+    point_counts := [StringToInteger(Read(POpen("./" * execFile * " " cat Sprint(m), "r"))) : m in [1..11]];
 
+    // Cleanup afterwards
+    System(Sprintf("rm %o", execFile));
+    
     // coefficents might be smaller. But I doubt memory is the main constraint.
 
     return point_counts;

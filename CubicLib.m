@@ -99,14 +99,20 @@ intrinsic deserialize(byteseq) -> RngMPolElt
     return seq;
 end intrinsic;
 
-intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false) -> SeqEnum
+intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false) -> SeqEnum
 {Loads the precomputed orbit data.}
 
     ZEROCUBIC := [0 : i in [1..56]];
     print "loading data...";
 
+    if Quick then
+	range := [1..2];
+    else
+	range := [1..85];
+    end if;
+    
     orbdata := [];
-    time for k in [1..85] do
+    time for k in range do
 	     name2 := Sprintf("../data/new/orbitreps-%o.data", k);
 	     seq := [];
 	     o2 := []; 
