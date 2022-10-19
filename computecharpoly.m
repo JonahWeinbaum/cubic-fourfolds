@@ -139,9 +139,9 @@ function PointCounts(cubic)
     k := GF(2);
     V6 := VectorSpace(k, 6);
     
-    n := CubicToInt(cubic);
+    // n := CubicToInt(cubic);
     
-    //flines := LinesThrough(n);
+    // flines := LinesThrough(n);
     flines := LinesThrough(cubic);
     
     mats := [];
@@ -220,7 +220,7 @@ function PointCounts(cubic)
 	       "    F = " cat Sprint(CppInputString(F)) cat "\n";
 
     Write(fname, string : Overwrite);
-
+    print #Points(Scheme(  Proj( Parent(cubic) )  , cubic  ));
     System("g++ -O3 count.cpp");
 
     point_counts := [StringToInteger(Read(POpen("./a.out " cat Sprint(m), "r"))) : m in [1..11]];

@@ -190,22 +190,66 @@ intrinsic CppInputString(h) -> MonStgElt
     end if;
     ret := "";
     for m in Monomials(h) do
-	j := [Degree(m, Parent(h).i) : i in [1..Rank(Parent(h))] ]; 	
-	str := "";
-	for k in [0 .. #j-1] do
-	    for l in [1..j[k+1]] do
-		if str eq "" then str := "y_" cat Sprint(k);
-		else str := "mult[" cat str cat "][" cat "y_" cat Sprint(k) cat "]";
-		end if;
-	    end for;
-
-	end for;
-	
-	if ret eq "" then ret := str;
-	else ret := ret cat " ^ " cat str;
-	end if;
+        j := [Degree(m, Parent(h).i) : i in [1..Rank(Parent(h))] ];
+    str := "";
+    for k in [0 .. #j-1] do
+        for l in [1..j[k+1]] do
+            if str eq "" then str := "y_" cat Sprint(k);
+            else str := "mult[" cat str cat "][" cat "y_" cat Sprint(k) cat "]";
+    end if;
+    end for;
+    
+    end for;
+    
+    if ret eq "" then ret := str;
+    else ret := ret cat " ^ " cat str;
+    end if;
     end for;
     
     return ret;
 end intrinsic;
+    
+    
+    /////////////////////////////////////////////////
+    //
+    // find the characteristic polynomial of frobenius on nonprimitive cohomology.
+    // input list of point counts over F_2^k, k = 1,..., 11.
+    /////////////////////////////////////////////////
+    
+CONSTQt_<t> := PolynomialRing(Rationals());
+CONSTCs_<s> := PolynomialRing(ComplexField(30));
+    
+intrinsic Charpoly(list::SeqEnum[RngIntElt]) -> RngUPolElt
+    {input list of point counts over F_2^k, k = 1,..., 11, returns charpoly of frobenius on nonprimitive cohomology.}
+    tr := [(list[m] - 1 - 2^m - 4^m - 8^m - 16^m)/4^m : m in [1..11]];
+    c := [];
+    c[1] := -tr[1];
+    for k in [2..11] do
+        c[k] := (tr[k] + &+[c[i]*tr[k-i] : i in [1..k-1]] )/(-k);
+    end for;
 
+    p := t^22 + &+[c[i]*t^(22-i) : i in [1..11] ];
+    g := CONSTQt_ ! (t^22 * Evaluate(p, 1/t));
+
+       // TODO: fix this.
+    if c[11] ne 0 then
+        ret := p + Modexp(g, 1, t^11);
+        return ret;
+    else
+        poly1 := p + Modexp(g, 1, t^11);
+        poly2 := p - Modexp(g, 1, t^11);
+        roots1 := Roots(Evaluate(poly1, s));
+        roots2 := Roots(Evaluate(poly2, s));
+        mods1 := [Modulus(roots1[i][1]) : i in [1..#roots1]];
+        mods2 := [Modulus(roots2[i][1]) : i in [1..#roots2]];
+
+    one := ComplexField(30)! 1;
+    if [Integers()! mods1[i] eq one : i in [1..#mods1] ] eq [true  : i in [1..#mods1] ] then
+        return poly1;
+        else return poly2;
+    end if;
+
+    end if;
+    
+end intrinsic;
+        
