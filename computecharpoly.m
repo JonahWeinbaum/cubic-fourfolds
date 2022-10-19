@@ -135,7 +135,75 @@ end try;
 /* V6 := VectorSpace(k, 6); */
 
 
-// Start with a smooth cubic fourfold with polynomial f;
+function AddingtonAuelStandardForm(cubic)
+
+    k := GF(2);
+    V6 := VectorSpace(k, 6);
+    R<y0, y1, y2, y3> := PolynomialRing(k, 4);
+    RR<y4, y5> := PolynomialRing(R, 4);
+    
+    flines := LinesThrough(cubic);
+
+    for line in flines do
+        // Compute a transformation M such that cubic^M has a line given by y0=...=y3=0.
+        vectorizedline := [V6 ! line[i] : i in [1..4]];
+        M := Matrix(ExtendBasis(vectorizedline, V6))^(-1);
+
+        // Update the cubic and extract coefficients.
+	g := cubic^M;
+	f := Evaluate(g, [y0, y1, y2, y3, y4, y5]);
+	A := MonomialCoefficient(f, y4^2);
+	B := MonomialCoefficient(f, y4*y5);
+	C := MonomialCoefficient(f, y5^2);
+	D := MonomialCoefficient(f, y4);
+	E := MonomialCoefficient(f, y5);
+	F := MonomialCoefficient(f, 1);
+
+        // Ensure that the choice is good.
+	I := Saturation(ideal<R | [A, B, C, D, E, F]>) ;
+	somesing := Scheme(ProjectiveSpace(R), [B, D, E]);
+	somesingpts := Points(somesing);
+	if 1 in I and #somesingpts ne 0 then
+            break;
+	end if;
+    end for;
+
+    if (1 notin I) or (#somesingpts eq 0) then
+	error "Cannot convert cubic into Addington-Auel standard form.";
+    end if;
+
+    //Check that the discriminantal quintic in P3 has singular point where by B=D=E=0, 
+    //and change coordinates so one of these singular points is in position (0:0:0:1).
+
+    V4 := VectorSpace(k, 4);
+    v := V4 ! Eltseq(somesingpts[1]);
+    M4 := Matrix(ExtendBasis([v], V4))^(-1);
+    A := A^M4;
+    B := B^M4;
+    C := C^M4;
+    D := D^M4;
+    E := E^M4;
+    F := F^M4;
+
+    return g, [A, B, C, D, E, F];
+end function;
+
+function DiscriminantProjectionEquations(conicCoeffs)
+    A, B, C, D, E, F := Explode(conicCoeffs);
+
+    rrr<y0, y1, y2> := PolynomialRing(k, 3);
+    RRR<y3> := PolynomialRing(rrr, 1);
+    disc := Evaluate(C*D^2 + A*E^2 + F*B^2 + B*D*E, [RRR!y0, RRR!y1, RRR!y2, RRR!y3]);
+
+    a := MonomialCoefficient(disc, y3^3);
+    b := MonomialCoefficient(disc, y3^2);
+    c := MonomialCoefficient(disc, y3);
+    d := MonomialCoefficient(disc, 1);    
+    
+    return a, b, c, d;
+    
+end function;
+    
 
 function PointCounts(cubic)
     // This function is mostly based off of 
@@ -206,17 +274,17 @@ function PointCounts(cubic)
     fname := "coeffs.h";
 
     string :=  "#define abcd \\" cat "\n" cat 
-               "    a = " cat Sprint(CppInputString(a)) cat ", \\" cat "\n" cat
-	       "    b = " cat Sprint(CppInputString(b)) cat ", \\" cat "\n" cat
-	       "    c = " cat Sprint(CppInputString(c)) cat ", \\" cat "\n" cat
-	       "    d = " cat Sprint(CppInputString(d)) cat "\n" cat "\n" cat
+               "    a = " cat CppInputString(a) cat ", \\" cat "\n" cat
+	       "    b = " cat CppInputString(b) cat ", \\" cat "\n" cat
+	       "    c = " cat CppInputString(c) cat ", \\" cat "\n" cat
+	       "    d = " cat CppInputString(d) cat "\n" cat "\n" cat
 	       "#define ABCDEF \\" cat "\n" cat
-	       "    A = " cat Sprint(CppInputString(A)) cat ", \\" cat "\n" cat
-	       "    B = " cat Sprint(CppInputString(B)) cat ", \\" cat "\n" cat
-	       "    C = " cat Sprint(CppInputString(C)) cat ", \\" cat "\n" cat
-	       "    D = " cat Sprint(CppInputString(D)) cat ", \\" cat "\n" cat
-	       "    E = " cat Sprint(CppInputString(E)) cat ", \\" cat "\n" cat
-	       "    F = " cat Sprint(CppInputString(F)) cat "\n";
+	       "    A = " cat CppInputString(A) cat ", \\" cat "\n" cat
+	       "    B = " cat CppInputString(B) cat ", \\" cat "\n" cat
+	       "    C = " cat CppInputString(C) cat ", \\" cat "\n" cat
+	       "    D = " cat CppInputString(D) cat ", \\" cat "\n" cat
+	       "    E = " cat CppInputString(E) cat ", \\" cat "\n" cat
+	       "    F = " cat CppInputString(F) cat "\n";
 
     Write(fname, string : Overwrite);
 
