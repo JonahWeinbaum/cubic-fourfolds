@@ -92,44 +92,7 @@ end function;
 
 COMPUTE_CHARPOLY_ALREADY_LOADED := true;
 end if;
-/*
-        eval1 := BitwiseAnd(monoevaluated[form][1], f);
 
-        if paritycalc(eval1) then 
-            continue;
-        end if;
-
-        eval2 := BitwiseAnd(monoevaluated[form][2], f);
-
-        if paritycalc(eval2) then 
-            continue;
-        end if;
-
-        eval3 := BitwiseAnd(monoevaluated[form][3], f);
-
-        if paritycalc(eval3) then 
-            continue;
-        end if;
-
-        eval4 := BitwiseAnd(monoevaluated[form][4], f);
-
-        if paritycalc(eval4) then 
-            continue;
-        end if;
-*/
-
-
-// Set constants and spaces.
-/* k := FiniteField(2); */
-/* G := GL(6, k); */
-
-/* R<[x]> := PolynomialRing(k, 6); */
-
-/* V, Bit:= GModule(G, R, 3); */
-/* P5 := ProjectiveSpace(R); */
-
-/* I := Identity(G); // Possible name conflict. */
-/* V6 := VectorSpace(k, 6); */
 
 function CheckSpecialPointIsSingular(conicCoeffs, v)
     A, B, C, D, E, F := Explode(conicCoeffs);
@@ -148,7 +111,8 @@ end function;
 
 
 function AddingtonAuelStandardForm(cubic)
-
+    // Transforms a cubic into a form as outlined in Addington-Auel Section 3.
+    
     k := GF(2);
     V6 := VectorSpace(k, 6);
     R<y0, y1, y2, y3> := PolynomialRing(k, 4);
@@ -239,69 +203,10 @@ function PointCounts(cubic)
     R<y0, y1, y2, y3> := PolynomialRing(k, 4);
     RR<y4, y5> := PolynomialRing(R, 4);
 
-    /*
-    flines := LinesThrough(cubic);
-
-    for line in flines do
-        // Compute a transformation M such that cubic^M has a line given by y0=...=y3=0.
-        vectorizedline := [V6 ! line[i] : i in [1..4]];
-        M := Matrix(ExtendBasis(vectorizedline, V6))^(-1);
-
-        // Update the cubic and extract coefficients.
-	g := cubic^M;
-	f := Evaluate(g, [y0, y1, y2, y3, y4, y5]);
-	A := MonomialCoefficient(f, y4^2);
-	B := MonomialCoefficient(f, y4*y5);
-	C := MonomialCoefficient(f, y5^2);
-	D := MonomialCoefficient(f, y4);
-	E := MonomialCoefficient(f, y5);
-	F := MonomialCoefficient(f, 1);
-
-        // Ensure that the choice is good.
-	I := Saturation(ideal<R | [A, B, C, D, E, F]>) ;
-	somesing := Scheme(ProjectiveSpace(R), [B, D, E]);
-	somesingpts := Points(somesing);
-	if 1 in I and #somesingpts ne 0 then
-            break;
-	end if;
-    end for;
-
-    if (1 notin I) or (#somesingpts eq 0) then
-	error "you've got to try something else for this cubic!";
-    end if;
-
-    //Check that the discriminantal quintic in P3 has singular point where by B=D=E=0, 
-    //and change coordinates so one of these singular points is in position (0:0:0:1).
-
-
-    V4 := VectorSpace(k, 4);
-    v := V4 ! Eltseq(somesingpts[1]);
-    M4 := Matrix(ExtendBasis([v], V4))^(-1);
-    A := A^M4;
-    B := B^M4;
-    C := C^M4;
-    D := D^M4;
-    E := E^M4;
-    F := F^M4;
-    */
-
     // Now compute coefficients for the conic bundle fibration
     // that will be fed into C++ point counting code.
     g, conicCoeffs := AddingtonAuelStandardForm(cubic);
     A, B, C, D, E, F := Explode(conicCoeffs);
-
-
-    /*
-    rrr<y0, y1, y2> := PolynomialRing(k, 3);
-    RRR<y3> := PolynomialRing(rrr, 1);
-    disc := Evaluate(C*D^2 + A*E^2 + F*B^2 + B*D*E, [RRR!y0, RRR!y1, RRR!y2, RRR!y3]);
-
-    a := MonomialCoefficient(disc, y3^3);
-    b := MonomialCoefficient(disc, y3^2);
-    c := MonomialCoefficient(disc, y3);
-    d := MonomialCoefficient(disc, 1);
-   */
-    
     a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
 
     //Generate the header file to put into C++. 
