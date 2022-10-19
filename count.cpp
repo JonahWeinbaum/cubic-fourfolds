@@ -251,7 +251,6 @@ int main(int argc, char **argv) {
   // Thus, in order to count points, it suffices to enumerate over the points in P2, compute the
   // set of rational points in the fibre, and then check a criterion on the associated conic
   // (see contribution_at_P3_point) in order to determine the correct contribution.
-
   
   // The contribution to the point count from the distinguished singularity.
   int diff = contribution_at_P3_point(0,0,0,1);

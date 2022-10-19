@@ -194,7 +194,7 @@ function DiscriminantProjectionEquations(conicCoeffs)
 end function;
     
 
-function PointCounts(cubic)
+function PointCounts(cubic, index)
     // This function is mostly based off of 
     // Section 3 of Addington-Auel. See loc. cit. for details. 
 
@@ -228,15 +228,20 @@ function PointCounts(cubic)
 
     Write(fname, string : Overwrite);
 
+
     // Testing code.
     X := Scheme(Proj(Parent(cubic)), cubic);
     print [#Points(X, GF(2^j)) : j in [1..4]];
 
-    // System call to C++.
-    System("g++ count.cpp");
+    execFile := Sprintf("a.%o.out", index);
+    compileString := Sprintf("g++ -O3 tableio.cpp count.cpp -o %o", execFile);
+    System(compileString);
 
-    point_counts := [StringToInteger(Read(POpen("./a.out " cat Sprint(m), "r"))) : m in [1..11]];
+    point_counts := [StringToInteger(Read(POpen("./" * execFile * " " cat Sprint(m), "r"))) : m in [1..11]];
 
+    // Cleanup afterwards
+    System(Sprintf("rm %o", execFile));
+    
     // coefficents might be smaller. But I doubt memory is the main constraint.
 
     return point_counts;

@@ -17,7 +17,7 @@ DATA_DIRECTORY := "../data/zeta/";
 CUBIC_ID_FILE := "orbrep.csv";
 ISSMOOTH_FILE := "smooth.csv";
 POINT_COUNTS_FILE := "point_counts.csv";
-
+ERROR_FILE := "error_report";
 
 /////////////////////////////////////////////////
 //
@@ -99,14 +99,20 @@ intrinsic deserialize(byteseq) -> RngMPolElt
     return seq;
 end intrinsic;
 
-intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false) -> SeqEnum
+intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false) -> SeqEnum
 {Loads the precomputed orbit data.}
 
     ZEROCUBIC := [0 : i in [1..56]];
     print "loading data...";
 
+    if Quick then
+	range := [1..2];
+    else
+	range := [1..85];
+    end if;
+    
     orbdata := [];
-    time for k in [1..85] do
+    time for k in range do
 	     name2 := Sprintf("../data/new/orbitreps-%o.data", k);
 	     seq := [];
 	     o2 := []; 
@@ -177,6 +183,11 @@ intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
     return 0;
 end intrinsic;
 
+intrinsic ReportError(index, err)
+{Write a report of the error to the file.}
+    Write(DATA_DIRECTORY * ERROR_FILE, Sprintf("%o, %o", index, err));
+    return;
+end intrinsic;
 
 /////////////////////////////////////////////////
 //
