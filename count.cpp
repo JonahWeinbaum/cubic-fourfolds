@@ -376,7 +376,7 @@ int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned 
   unsigned ABCDEF; // coefficients of the conic, defined in coeffs.h
 
   // TODO: We need to account for the case where the conic has rank 0.
-  if (A == 0 && B == 0 && C == 0 && D == 0 && E == 0 & F == 0)
+  if (A == 0 && B == 0 && C == 0 && D == 0 && E == 0 && F == 0)
     throw std::runtime_error("Not implemented if the conic bundle is not flat.");
   
   // The conic is rank 1. It is a double line in characteristic 2.
