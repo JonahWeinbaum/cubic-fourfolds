@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
       size++;
     }
     // Set the size of the orbit.
-    orbit_size[i] = size;
+    orbit_size[start] = size;
   }
   #endif
 
@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
   for (unsigned y_2 = 0; y_2 < q; y_2++)
     if (orbit_rep[y_2] == y_2)
       diff += contribution_of_fibre_over_P2_point(0, 1, y_2) * orbit_size[y_2];
-
+  
   // The contribution from the A2 part. 
   for (unsigned y_1 = 0; y_1 < q; y_1++)
     if (orbit_rep[y_1] == y_1)

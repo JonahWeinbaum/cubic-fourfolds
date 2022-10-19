@@ -3,10 +3,7 @@ SetColumns(0);
 //////////////////////////////////////////////
 // Script start
 
-try
-    do_nothing_if_loaded := COMPUTE_CHARPOLY_ALREADY_LOADED;
-
-catch e
+if not assigned COMPUTE_CHARPOLY_ALREADY_LOADED then
 //Code to get lines
 
 k := FiniteField(2);
@@ -94,7 +91,7 @@ function LinesThrough(f)
 end function;
 
 COMPUTE_CHARPOLY_ALREADY_LOADED := true;
-end try;
+end if;
 /*
         eval1 := BitwiseAnd(monoevaluated[form][1], f);
 
@@ -133,6 +130,21 @@ end try;
 
 /* I := Identity(G); // Possible name conflict. */
 /* V6 := VectorSpace(k, 6); */
+
+function CheckSpecialPointIsSingular(conicCoeffs, v)
+    A, B, C, D, E, F := Explode(conicCoeffs);
+    discP3 := A*E^2 + B^2*F + C*D^2 - B*D*E;
+    X := Scheme(Proj(Parent(discP3)), discP3);
+    assert Dimension(X) eq 2;
+
+    seqv := Eltseq(v);
+    assert Evaluate(B, seqv) eq 0;
+    assert Evaluate(D, seqv) eq 0;
+    assert Evaluate(E, seqv) eq 0;
+    
+    assert IsSingular(X ! Eltseq(v));
+    return true;
+end function;
 
 
 function AddingtonAuelStandardForm(cubic)
@@ -177,16 +189,22 @@ function AddingtonAuelStandardForm(cubic)
 
     V4 := VectorSpace(k, 4);
     v := V4 ! Eltseq(somesingpts[1]);
-    M4 := Matrix(ExtendBasis([v], V4))^(-1);
-    A := A^M4;
-    B := B^M4;
-    C := C^M4;
-    D := D^M4;
-    E := E^M4;
-    F := F^M4;
+    extBase := ExtendBasis([v], V4);
+    revextBase := Reverse(extBase); // Puts v at the bottom.
 
-    return g, [A, B, C, D, E, F];
+    assert CheckSpecialPointIsSingular([A,B,C,D,E,F], v);
+    
+    M4 := Matrix(revextBase)^(-1);
+    invM4 := M4^(-1);
+    
+    // Change coordinates to move the singular point.
+    coeffs := [A, B, C, D, E, F];
+    yvec := Vector(R, [y0,y1,y2,y3]);
+    newcoeffs := [Evaluate(co, Eltseq(yvec * ChangeRing(invM4, R))) : co in coeffs];
+
+    return g, newcoeffs;
 end function;
+
 
 function DiscriminantProjectionEquations(conicCoeffs)
     A, B, C, D, E, F := Explode(conicCoeffs);
@@ -199,21 +217,29 @@ function DiscriminantProjectionEquations(conicCoeffs)
     b := MonomialCoefficient(disc, y3^2);
     c := MonomialCoefficient(disc, y3);
     d := MonomialCoefficient(disc, 1);    
+
+    discP3 := C*D^2 + A*E^2 + F*B^2 + B*D*E;
+
+    // Sanity checks.
+    X := Scheme(Proj(Parent(discP3)), discP3);
+    assert Dimension(X) eq 2;
+    assert IsSingular(X ! [0,0,0,1]);
+    assert IsZero(MonomialCoefficient(disc, y3^4)) and IsZero(MonomialCoefficient(disc, y3^5));
     
     return a, b, c, d;
-    
 end function;
     
 
 function PointCounts(cubic)
     // This function is mostly based off of 
     // Section 3 of Addington-Auel. See loc. cit. for details. 
-    
+
     k := GF(2);
     V6 := VectorSpace(k, 6);
     R<y0, y1, y2, y3> := PolynomialRing(k, 4);
     RR<y4, y5> := PolynomialRing(R, 4);
-    
+
+    /*
     flines := LinesThrough(cubic);
 
     for line in flines do
@@ -257,9 +283,15 @@ function PointCounts(cubic)
     D := D^M4;
     E := E^M4;
     F := F^M4;
+    */
 
-    //Now compute coefficients that will be fed into C++ point counting code.
+    // Now compute coefficients for the conic bundle fibration
+    // that will be fed into C++ point counting code.
+    g, conicCoeffs := AddingtonAuelStandardForm(cubic);
+    A, B, C, D, E, F := Explode(conicCoeffs);
 
+
+    /*
     rrr<y0, y1, y2> := PolynomialRing(k, 3);
     RRR<y3> := PolynomialRing(rrr, 1);
     disc := Evaluate(C*D^2 + A*E^2 + F*B^2 + B*D*E, [RRR!y0, RRR!y1, RRR!y2, RRR!y3]);
@@ -268,6 +300,9 @@ function PointCounts(cubic)
     b := MonomialCoefficient(disc, y3^2);
     c := MonomialCoefficient(disc, y3);
     d := MonomialCoefficient(disc, 1);
+   */
+    
+    a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
 
     //Generate the header file to put into C++. 
 
@@ -290,7 +325,7 @@ function PointCounts(cubic)
 
     // Testing code.
     X := Scheme(Proj(Parent(cubic)), cubic);
-    print [#Points(X, GF(2^j)) : j in [1..3]];
+    print [#Points(X, GF(2^j)) : j in [1..4]];
 
     // System call to C++.
     System("g++ count.cpp");
