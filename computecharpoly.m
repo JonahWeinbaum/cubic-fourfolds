@@ -219,8 +219,13 @@ function PointCounts(cubic)
 	       "    F = " cat Sprint(CppInputString(F)) cat "\n";
 
     Write(fname, string : Overwrite);
-    print #Points(Scheme(  Proj( Parent(cubic) )  , cubic  ));
-    System("g++ -O3 count.cpp");
+
+    // Testing code.
+    X := Scheme(Proj(Parent(cubic)), cubic);
+    print [#Points(X, GF(2^j)) : j in [1..3]];
+
+    // System call to C++.
+    System("g++ count.cpp");
 
     point_counts := [StringToInteger(Read(POpen("./a.out " cat Sprint(m), "r"))) : m in [1..11]];
 

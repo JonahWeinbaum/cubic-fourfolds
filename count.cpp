@@ -151,15 +151,19 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Hark! This is at least one bug. Roots of x^3 not counted properly.
   // fill the table
   for (int a = 0; a < q; a++)
     for (int b = 0; b < q; b++) {
       // (x^2 + ax + b)(x+a) = x^3 + sx + t
       unsigned s = mult[a][a] ^ b, t = mult[a][b];
-      if (b == 0) { // if a is already a root of x^2 + ax + b
+
+      if (a == 0 && b == 0) { // We are looking at the depressed cubic x^3.
+        depressed_cubic_roots[0][s][t] = 0;
+        
+      } else if (b == 0) { // if a is already a root of x^2 + ax + b
         depressed_cubic_roots[0][s][t] = quadratic_roots[0][a][b];
         depressed_cubic_roots[1][s][t] = quadratic_roots[1][a][b];
+        
       } else {
         depressed_cubic_roots[0][s][t] = a;
         depressed_cubic_roots[1][s][t] = quadratic_roots[0][a][b];
@@ -224,8 +228,8 @@ int main(int argc, char **argv) {
   compare_3_table(Y, depressed_cubic_roots, 3, q, q);
   #endif
   
-  cputime = std::clock() - cputime;
-  std::cerr << "precomputation took " << cputime * 1./ CLOCKS_PER_SEC << std::endl;
+  // cputime = std::clock() - cputime;
+  // std::cerr << "precomputation took " << cputime * 1./ CLOCKS_PER_SEC << std::endl;
 
   //////////////////////////////////////////
   // Main calculation
