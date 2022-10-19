@@ -50,8 +50,8 @@ const unsigned polynomials[] = { 1, // placeholder
   (1<<22) + (1<<1) + 1 }; */
 
 // function prototypes
-int process(unsigned, unsigned, unsigned);
-int how_many(unsigned, unsigned, unsigned, unsigned);
+int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
+int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
 void print_it(unsigned);
 
 int main(int argc, char **argv) {
@@ -246,11 +246,11 @@ int main(int argc, char **argv) {
   //
   // Thus, in order to count points, it suffices to enumerate over the points in P2, compute the
   // set of rational points in the fibre, and then check a criterion on the associated conic
-  // (see how_many) in order to determine the correct contribution.
+  // (see contribution_at_P3_point) in order to determine the correct contribution.
 
   
   // The contribution to the point count from the distinguished singularity.
-  int diff = how_many(0,0,0,1);
+  int diff = contribution_at_P3_point(0,0,0,1);
 
   // We next look at the open subscheme Delta - (0:0:0:1). 
   // We enumerate over the points in P2. Because the equation for X is defined over F2, we may
@@ -259,18 +259,18 @@ int main(int argc, char **argv) {
   // We use the standard decomposition of P2 = {pt} + A1 + A2.
 
   // The contribution from the fibre over (0:0:1).
-  diff += process(0, 0, 1);
+  diff += contribution_of_fibre_over_P2_point(0, 0, 1);
 
   // The contribution over the hyperplane at infinity.
   for (unsigned y_2 = 0; y_2 < q; y_2++)
     if (orbit_rep[y_2] == y_2)
-      diff += process(0, 1, y_2) * orbit_size[y_2];
+      diff += contribution_of_fibre_over_P2_point(0, 1, y_2) * orbit_size[y_2];
 
   // The contribution from the A2 part. 
   for (unsigned y_1 = 0; y_1 < q; y_1++)
     if (orbit_rep[y_1] == y_1)
       for (unsigned y_2 = 0; y_2 < q; y_2++)
-        diff += process(1, y_1, y_2) * orbit_size[y_1];
+        diff += contribution_of_fibre_over_P2_point(1, y_1, y_2) * orbit_size[y_1];
 
   
   //////////////////////////////////////
@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-// process (TODO: Name should be literally anything else.)
+// contribution_of_fibre_over_P2_point
 //
 // iterate over the three sheets of the quintic,
 // i.e. the three roots of a y_3^3 + b y_3^2 + c y_3 + d
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
 // Use Cardano's formula to determine the roots of the cubic.
 // Then return the number of points on the singular conic associated to that root.
 //
-int process(unsigned y_0, unsigned y_1, unsigned y_2) {
+int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2) {
   unsigned abcd; // coefficients of 3:1 cover, defined in coeffs.h
 
   // iterate over the three sheets of the quintic,
@@ -308,7 +308,7 @@ int process(unsigned y_0, unsigned y_1, unsigned y_2) {
     for (int i = 0; i < 3; i++) {
       unsigned r = depressed_cubic_roots[i][s][t];
       if (r == NULL_Fq_elt) break;
-      ret += how_many(y_0, y_1, y_2, r ^ b);
+      ret += contribution_at_P3_point(y_0, y_1, y_2, r ^ b);
     }
     return ret;
     
@@ -323,13 +323,13 @@ int process(unsigned y_0, unsigned y_1, unsigned y_2) {
     for (int i = 0; i < 2; i++) {
       unsigned y_3 = quadratic_roots[i][c][d];
       if (y_3 == NULL_Fq_elt) break;
-      ret += how_many(y_0, y_1, y_2, y_3);
+      ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
     }
     return ret;
     
   } else if (c != 0) {
     // The cubic degenerates to a linear polynomial.
-    return how_many(y_0, y_1, y_2, divi[d][c]);    
+    return contribution_at_P3_point(y_0, y_1, y_2, divi[d][c]);    
     
   } else if (d == 0) {
     // The cubic degenerates to the identically zero polynomial.
@@ -337,7 +337,7 @@ int process(unsigned y_0, unsigned y_1, unsigned y_2) {
 
     // We loop over points on said line. (Except the distinguished points (0:0:0:1).)
     for (unsigned y_3 = 0; y_3 < q; y_3++)
-      ret += how_many(y_0, y_1, y_2, y_3);
+      ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
 
     return ret;
     
@@ -359,7 +359,7 @@ int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
   return Arf_invariant(X, Y, Z) == 1 ? -1 : 1;
 }
 
-// how_many (Should be named "points on parametrized conic" or something.)
+// contribution_at_P3_point (Should be named "points on parametrized conic" or something.)
 //
 // Determines how many points are on the double cover
 // associated to the singular conic
@@ -368,7 +368,7 @@ int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
 //
 // minus 1 point for the quintic downstairs
 //
-int how_many(unsigned y_0, unsigned y_1, unsigned y_2, unsigned y_3) {
+int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned y_3) {
   unsigned ABCDEF; // coefficients of the conic, defined in coeffs.h
 
   // TODO: We need to account for the case where the conic has rank 0.
