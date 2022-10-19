@@ -16,7 +16,7 @@ function ReportPointCounts(tuple)
 	a := PointCounts(f, index);
 	WriteZetaData(index, IsSmooth(f), a);
     catch e
-	print e;
+	ReportError(index, e);
     end try;
     return 0;
 end function;

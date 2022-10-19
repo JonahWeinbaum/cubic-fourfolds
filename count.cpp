@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
   #endif
   
   cputime = std::clock() - cputime;
-  std::cerr << "precomputation took " << cputime * 1./ CLOCKS_PER_SEC << std::endl;
+  //std::cerr << "precomputation took " << cputime * 1./ CLOCKS_PER_SEC << std::endl;
   
   // main calculation
   // just record #double cover - #quintic

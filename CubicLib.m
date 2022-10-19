@@ -17,7 +17,7 @@ DATA_DIRECTORY := "../data/zeta/";
 CUBIC_ID_FILE := "orbrep.csv";
 ISSMOOTH_FILE := "smooth.csv";
 POINT_COUNTS_FILE := "point_counts.csv";
-
+ERROR_FILE := "error_report";
 
 /////////////////////////////////////////////////
 //
@@ -183,6 +183,11 @@ intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
     return 0;
 end intrinsic;
 
+intrinsic ReportError(index, err)
+{Write a report of the error to the file.}
+    Write(DATA_DIRECTORY * ERROR_FILE, Sprintf("%o, %o", index, err));
+    return;
+end intrinsic;
 
 /////////////////////////////////////////////////
 //
