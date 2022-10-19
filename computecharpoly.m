@@ -3,6 +3,10 @@ SetColumns(0);
 //////////////////////////////////////////////
 // Script start
 
+try
+    do_nothing_if_loaded := COMPUTE_CHARPOLY_ALREADY_LOADED;
+
+catch e
 //Code to get lines
 
 k := FiniteField(2);
@@ -89,6 +93,8 @@ function LinesThrough(f)
     return lines;
 end function;
 
+COMPUTE_CHARPOLY_ALREADY_LOADED := true;
+end try;
 /*
         eval1 := BitwiseAnd(monoevaluated[form][1], f);
 
@@ -132,31 +138,22 @@ end function;
 // Start with a smooth cubic fourfold with polynomial f;
 
 function PointCounts(cubic)
-
-    // b := Reverse([Integers() ! Bit(cubic)[i] : i in [1..56]]);
-    // n := Seqint(b, 2);
-
+    // This function is mostly based off of 
+    // Section 3 of Addington-Auel. See loc. cit. for details. 
+    
     k := GF(2);
     V6 := VectorSpace(k, 6);
+    R<y0, y1, y2, y3> := PolynomialRing(k, 4);
+    RR<y4, y5> := PolynomialRing(R, 4);
     
-    // n := CubicToInt(cubic);
-    
-    // flines := LinesThrough(n);
     flines := LinesThrough(cubic);
-    
-    mats := [];
-    for l in flines do
-	M := ( Matrix(ExtendBasis([V6 ! l[1], V6 ! l[2], V6 ! l[3], V6 ! l[4]], V6)) )^(-1);
-	Append(~mats, M);
-    end for;
 
-    //now, for each M in mats, cubic^M has a line given by y0=...=y3=0 
+    for line in flines do
+        // Compute a transformation M such that cubic^M has a line given by y0=...=y3=0.
+        vectorizedline := [V6 ! line[i] : i in [1..4]];
+        M := Matrix(ExtendBasis(vectorizedline, V6))^(-1);
 
-    //For the rest of this code, refer to section 3 of Addington-Auel for details. 
-
-    for M in mats do
-	R<y0, y1, y2, y3> := PolynomialRing(k, 4);
-	RR<y4, y5> := PolynomialRing(R, 4);
+        // Update the cubic and extract coefficients.
 	g := cubic^M;
 	f := Evaluate(g, [y0, y1, y2, y3, y4, y5]);
 	A := MonomialCoefficient(f, y4^2);
@@ -165,6 +162,8 @@ function PointCounts(cubic)
 	D := MonomialCoefficient(f, y4);
 	E := MonomialCoefficient(f, y5);
 	F := MonomialCoefficient(f, 1);
+
+        // Ensure that the choice is good.
 	I := Saturation(ideal<R | [A, B, C, D, E, F]>) ;
 	somesing := Scheme(ProjectiveSpace(R), [B, D, E]);
 	somesingpts := Points(somesing);
