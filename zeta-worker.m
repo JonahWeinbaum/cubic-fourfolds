@@ -13,8 +13,8 @@ function ReportPointCounts(tuple)
     
     f := BitListToCubic(blist);
     try
-	a := PointCounts(f, index);
-	WriteZetaData(index, IsSmooth(f), a);
+	a := PointCounts(f : ExecNum := index);
+	ok_write := WriteZetaData(index, IsSmooth(f), a);
     catch e
 	ReportError(index, e);
     end try;

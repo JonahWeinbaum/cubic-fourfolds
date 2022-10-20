@@ -194,7 +194,7 @@ function DiscriminantProjectionEquations(conicCoeffs)
 end function;
     
 
-function PointCounts(cubic, index)
+function PointCounts(cubic : ExecNum:=false)
     // This function is mostly based off of 
     // Section 3 of Addington-Auel. See loc. cit. for details. 
 
@@ -233,11 +233,23 @@ function PointCounts(cubic, index)
     X := Scheme(Proj(Parent(cubic)), cubic);
     print [#Points(X, GF(2^j)) : j in [1..4]];
 
-    execFile := Sprintf("a.%o.out", index);
+    // Option to ensure parallel code doesn't fight over executable file.
+    if ExecNum cmpeq false then
+	execFile := "a.out";
+    else
+	execFile := Sprintf("a.%o.out", ExecNum);
+    end if;
+	
     compileString := Sprintf("g++ -O3 tableio.cpp count.cpp -o %o", execFile);
     System(compileString);
 
-    point_counts := [StringToInteger(Read(POpen("./" * execFile * " " cat Sprint(m), "r"))) : m in [1..11]];
+    cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [1..11]];
+
+    try
+	point_counts := [StringToInteger(out) : out in cppOutputs];
+    catch e
+	error "Error from C++. Received output: ", cppOutputs;
+    end try;
 
     // Cleanup afterwards
     System(Sprintf("rm %o", execFile));
