@@ -14,7 +14,7 @@ function ReportPointCounts(tuple)
     f := BitListToCubic(blist);
     try
 	is_smth := IsSmooth(f);
-	if IsSmooth(f) then
+	if is_smth then
 	    a := PointCounts(f : ExecNum := index);
 	    ok_write := WriteZetaData(index, is_smth, a);
 	end if;
