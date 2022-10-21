@@ -35,14 +35,14 @@ end function;
 
 
 // Checks if C++ point counting matches magma's point counts.
-function TestPointCounts(cubic)
+function TestPointCounts(cubic : ExecNum:=false)
     r<[x]> := PolynomialRing(FiniteField(2), 6);
     cubic := r ! cubic;
     Pcubic := ProjectiveSpace(Parent(cubic));
     X := Scheme(Pcubic, cubic);
     
     Maxq := 4;
-    ptcts := PointCounts(cubic : Maxq := Maxq);
+    ptcts := PointCounts(cubic : Maxq := Maxq, ExecNum:=ExecNum);
     ptcounts := [ptcts[i] : i in [1..Maxq]];
 
     // Expected values.
@@ -66,6 +66,12 @@ print "Point counts...";
 time for f in test_cubics[1..5] do
     assert TestPointCounts(f);
 end for;
+
+print "Point counts (with options)...";
+time for f in test_cubics[1..5] do
+    assert TestPointCounts(f : ExecNum:=1);
+end for;
+
 
 // Really long test -- 133 (s).
 // time assert &and[TestPointCounts(f) : f in test_cubics];

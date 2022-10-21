@@ -218,7 +218,7 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11)
     else
 	execFile := Sprintf("a.%o.out", ExecNum);
         headerFile := Sprintf("coeffs%o.h", ExecNum);
-        compileString := Sprintf("g++ -DCOEFFSFILE='\"%o\"' tableio.cpp count.cpp -o %o", headerFile, execFile);
+        compileString := Sprintf("g++ -DWITHCACHE -DCOEFFSFILE='\"%o\"' tableio.cpp count.cpp -o %o", headerFile, execFile);
     end if;
 
     // Prepare C++ code.
