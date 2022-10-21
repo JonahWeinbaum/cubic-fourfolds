@@ -215,7 +215,7 @@ function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
     return 0;
 end function;
     
-function PointCounts(cubic : ExecNum:=false)
+function PointCounts(cubic : ExecNum:=false, Maxq:=11)
     // This function is mostly based off of 
     // Section 3 of Addington-Auel. See loc. cit. for details. 
 
@@ -233,8 +233,8 @@ function PointCounts(cubic : ExecNum:=false)
 
     
     // Testing code.
-    X := Scheme(Proj(Parent(cubic)), cubic);
-    print [#Points(X, GF(2^j)) : j in [1..4]];
+    /* X := Scheme(Proj(Parent(cubic)), cubic); */
+    /* print [#Points(X, GF(2^j)) : j in [1..4]]; */
 
     // Option to ensure parallel code doesn't fight over executable file.
     if ExecNum cmpeq false then
@@ -252,7 +252,7 @@ function PointCounts(cubic : ExecNum:=false)
 
     // Compile and execute.
     System(compileString);
-    cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [1..11]];
+    cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [1..Maxq]];
 
     try
 	point_counts := [StringToInteger(out) : out in cppOutputs];
