@@ -94,22 +94,6 @@ COMPUTE_CHARPOLY_ALREADY_LOADED := true;
 end if;
 
 
-function CheckSpecialPointIsSingular(conicCoeffs, v)
-    A, B, C, D, E, F := Explode(conicCoeffs);
-    discP3 := A*E^2 + B^2*F + C*D^2 - B*D*E;
-    X := Scheme(Proj(Parent(discP3)), discP3);
-    assert Dimension(X) eq 2;
-
-    seqv := Eltseq(v);
-    assert Evaluate(B, seqv) eq 0;
-    assert Evaluate(D, seqv) eq 0;
-    assert Evaluate(E, seqv) eq 0;
-    
-    assert IsSingular(X ! Eltseq(v));
-    return true;
-end function;
-
-
 function AddingtonAuelStandardForm(cubic)
     // Transforms a cubic into a form as outlined in Addington-Auel Section 3.
     
@@ -156,8 +140,6 @@ function AddingtonAuelStandardForm(cubic)
     extBase := ExtendBasis([v], V4);
     revextBase := Reverse(extBase); // Puts v at the bottom.
 
-    assert CheckSpecialPointIsSingular([A,B,C,D,E,F], v);
-    
     M4 := Matrix(revextBase)^(-1);
     invM4 := M4^(-1);
     
@@ -181,14 +163,6 @@ function DiscriminantProjectionEquations(conicCoeffs)
     b := MonomialCoefficient(disc, y3^2);
     c := MonomialCoefficient(disc, y3);
     d := MonomialCoefficient(disc, 1);    
-
-    discP3 := C*D^2 + A*E^2 + F*B^2 + B*D*E;
-
-    // Sanity checks.
-    X := Scheme(Proj(Parent(discP3)), discP3);
-    assert Dimension(X) eq 2;
-    assert IsSingular(X ! [0,0,0,1]);
-    assert IsZero(MonomialCoefficient(disc, y3^4)) and IsZero(MonomialCoefficient(disc, y3^5));
     
     return a, b, c, d;
 end function;
@@ -250,8 +224,11 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11)
     // Prepare C++ code.
     ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
 
-    // Compile and execute.
-    System(compileString);
+    // Compile.
+    retcode := System(compileString);
+    error if retcode ne 0, "Error at compile time step. Exit status: ", retcode;
+    
+    // Execute.
     cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [1..Maxq]];
 
     try

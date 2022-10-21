@@ -4,6 +4,21 @@ load "computecharpoly.m";
 //////////////////////////////////////////////
 // Script start
 
+function CheckSpecialPointIsSingular(conicCoeffs, v)
+    A, B, C, D, E, F := Explode(conicCoeffs);
+    discP3 := A*E^2 + B^2*F + C*D^2 - B*D*E;
+    X := Scheme(Proj(Parent(discP3)), discP3);
+    assert Dimension(X) eq 2;
+
+    seqv := Eltseq(v);
+    assert Evaluate(B, seqv) eq 0;
+    assert Evaluate(D, seqv) eq 0;
+    assert Evaluate(E, seqv) eq 0;
+    
+    assert IsSingular(X ! Eltseq(v));
+    return true;
+end function;
+
 
 // Checks that the conversion to Addington-Auel standard form works.
 function TestAAStdForm(cubic)
