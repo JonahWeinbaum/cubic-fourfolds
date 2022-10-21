@@ -3,7 +3,12 @@
 #include <ctime>
 #include <iostream>
 #include "tableio.h"
+
+#ifndef COEFFSFILE
 #include "coeffs.h"
+#else
+#include COEFFSFILE
+#endif
 
 // we're in F_q
 unsigned q;

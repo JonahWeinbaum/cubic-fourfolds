@@ -194,25 +194,10 @@ function DiscriminantProjectionEquations(conicCoeffs)
 end function;
     
 
-function PointCounts(cubic : ExecNum:=false)
-    // This function is mostly based off of 
-    // Section 3 of Addington-Auel. See loc. cit. for details. 
-
-    k := GF(2);
-    V6 := VectorSpace(k, 6);
-    R<y0, y1, y2, y3> := PolynomialRing(k, 4);
-    RR<y4, y5> := PolynomialRing(R, 4);
-
-    // Now compute coefficients for the conic bundle fibration
-    // that will be fed into C++ point counting code.
-    g, conicCoeffs := AddingtonAuelStandardForm(cubic);
+function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
     A, B, C, D, E, F := Explode(conicCoeffs);
-    a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
-
-    //Generate the header file to put into C++. 
-
-    fname := "coeffs.h";
-
+    a, b, c, d := Explode(discCoeffs);
+    
     string :=  "#define abcd \\" cat "\n" cat 
                "    a = " cat CppInputString(a) cat ", \\" cat "\n" cat
 	       "    b = " cat CppInputString(b) cat ", \\" cat "\n" cat
@@ -227,8 +212,26 @@ function PointCounts(cubic : ExecNum:=false)
 	       "    F = " cat CppInputString(F) cat "\n";
 
     Write(fname, string : Overwrite);
+    return 0;
+end function;
+    
+function PointCounts(cubic : ExecNum:=false)
+    // This function is mostly based off of 
+    // Section 3 of Addington-Auel. See loc. cit. for details. 
 
+    k := GF(2);
+    V6 := VectorSpace(k, 6);
+    R<y0, y1, y2, y3> := PolynomialRing(k, 4);
+    RR<y4, y5> := PolynomialRing(R, 4);
 
+    // Now compute coefficients for the conic bundle fibration
+    // that will be fed into C++ point counting code.
+    g, conicCoeffs := AddingtonAuelStandardForm(cubic);
+    A, B, C, D, E, F := Explode(conicCoeffs);
+    a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
+    discCoeffs := [a,b,c,d];
+
+    
     // Testing code.
     X := Scheme(Proj(Parent(cubic)), cubic);
     print [#Points(X, GF(2^j)) : j in [1..4]];
@@ -236,13 +239,19 @@ function PointCounts(cubic : ExecNum:=false)
     // Option to ensure parallel code doesn't fight over executable file.
     if ExecNum cmpeq false then
 	execFile := "a.out";
+        headerFile := "coeffs.h";
+        compileString := Sprintf("g++ tableio.cpp count.cpp -o %o", execFile);
     else
 	execFile := Sprintf("a.%o.out", ExecNum);
+        headerFile := Sprintf("coeffs%o.h", ExecNum);
+        compileString := Sprintf("g++ -DCOEFFSFILE='\"%o\"' tableio.cpp count.cpp -o %o", headerFile, execFile);
     end if;
-	
-    compileString := Sprintf("g++ -O3 tableio.cpp count.cpp -o %o", execFile);
-    System(compileString);
 
+    // Prepare C++ code.
+    ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
+
+    // Compile and execute.
+    System(compileString);
     cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [1..11]];
 
     try
@@ -253,9 +262,11 @@ function PointCounts(cubic : ExecNum:=false)
 
     // Cleanup afterwards
     System(Sprintf("rm %o", execFile));
-    
-    // coefficents might be smaller. But I doubt memory is the main constraint.
 
+    if headerFile ne "coeffs.h" then
+        System(Sprintf("rm %o", headerFile));
+    end if;
+    
     return point_counts;
 end function;
 
