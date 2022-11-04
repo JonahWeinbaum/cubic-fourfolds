@@ -17,6 +17,7 @@ DATA_DIRECTORY := "../data/zeta/";
 CUBIC_ID_FILE := "orbrep.csv";
 ISSMOOTH_FILE := "smooth.csv";
 POINT_COUNTS_FILE := "point_counts.csv";
+ORBIT_SIZE_FILE := "stabilizer_counts.csv";
 ERROR_FILE := "error_report";
 
 /////////////////////////////////////////////////
@@ -255,6 +256,12 @@ intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
     Write(DATA_DIRECTORY * CUBIC_ID_FILE, Sprintf("%o", i));
     Write(DATA_DIRECTORY * ISSMOOTH_FILE, Sprintf("%o, %o", i, issmooth));
     Write(DATA_DIRECTORY * POINT_COUNTS_FILE, Sprintf("%o, %o", i, pointcounts));    
+    return 0;
+end intrinsic;
+
+intrinsic WriteOrbitSizeData(i, stabilizersize) -> RngIntElt
+{}
+    Write(DATA_DIRECTORY * ORBIT_SIZE_FILE, Sprintf("%o, %o", i, stabilizersize));
     return 0;
 end intrinsic;
 
