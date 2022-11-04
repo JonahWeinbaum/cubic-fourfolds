@@ -53,6 +53,65 @@ end intrinsic;
 
 /////////////////////////////////////////////////
 //
+// Warring-like subspaces
+//
+/////////////////////////////////////////////////
+
+// The Polemic subspace is the space of quadratic*linear, which has dimension 36.
+// The sub<...> constructor is in the category of G-modules.
+CONST_Warring := sub<CONST_V | CONST_Bit(CONST_R.1^3)> ;
+CONST_Polemic := sub<CONST_V | CONST_Bit(CONST_R.1^2 * CONST_R.2)>;
+
+CONST_Polemic_quo, CONST_to_polemic_quo := quo<CONST_V | CONST_Polemic>;
+CONST_Warring_quo, CONST_to_warring_quo := quo<CONST_V | CONST_Warring>;
+
+
+/////////////////////////////////////////////////
+//
+// Orbits and stabilizers
+//
+/////////////////////////////////////////////////
+
+intrinsic CubicStabilizer(f :: RngMPolElt) -> GrpMat
+{Computes the stabilizer of a cubic form over F2 under the action of PGL_6.}
+
+    // To efficiently compute the stabilizer, we use the standard filtration.
+    // as described in the paper.
+    
+    // Images of f under the standard filtration.
+    v   := CONST_Bit(f);
+    vU  := CONST_to_warring_quo(v);
+    vUp := CONST_to_polemic_quo(v);
+
+    // Action maps
+    cub_action := GModuleAction(CONST_V);
+    pol_action := GModuleAction(CONST_Polemic_quo);
+    war_action := GModuleAction(CONST_Warring_quo);
+
+    // Compute stabilizer from the Polemic quotient.
+    StabvUp := Stabilizer(ActionGroup(Parent(vUp)), vUp);
+    WQres   := Restriction(CONST_Warring_quo, StabvUp @@ pol_action);
+
+    // Compute stabilizer from the Warring quotient.
+    StabvU := Stabilizer(ActionGroup(WQres), vU);    
+    Vres   := Restriction(CONST_V, StabvU @@ war_action);
+
+    // Compute the stabilizer.
+    Stabv := Stabilizer(ActionGroup(Vres), v);
+
+    // Return the result within PGL_6
+    return Stabv @@ cub_action;
+end intrinsic;
+
+
+intrinsic CubicOrbitSize(f :: RngMPolElt) -> RngIntElt
+{Computes the size of the orbit of a cubic form over F2 under the action of PGL_6.}
+    Stabv := CubicStabilizer(f);
+    return #CONST_G/#Stabv;    
+end intrinsic;
+    
+/////////////////////////////////////////////////
+//
 // Geometry
 //
 /////////////////////////////////////////////////
@@ -64,6 +123,22 @@ intrinsic IsSmooth(f :: RngMPolElt) -> BoolElt
     X := Scheme(PP, f);
     return IsNonSingular(X);
 end intrinsic;
+
+
+/////////////////////////////////////////////////
+//
+// Group theory
+//
+/////////////////////////////////////////////////
+
+// Count Orbits using Burnside.
+intrinsic CountOrbits(Gmod) -> RngIntElt
+{Counts the orbits of a group acting on a G-module via Burnside's lemma.}
+    rho := Representation(Gmod);
+    G := Group(Gmod);
+    return &+[#Eigenspace(rho(c[3]),1) * c[2] : c in ConjugacyClasses(G) ]/#G;
+end intrinsic;
+
 
 /////////////////////////////////////////////////
 //
@@ -202,65 +277,73 @@ intrinsic CppInputString(h) -> MonStgElt
     ret := "";
     for m in Monomials(h) do
         j := [Degree(m, Parent(h).i) : i in [1..Rank(Parent(h))] ];
-    str := "";
-    for k in [0 .. #j-1] do
-        for l in [1..j[k+1]] do
-            if str eq "" then str := "y_" cat Sprint(k);
-            else str := "mult[" cat str cat "][" cat "y_" cat Sprint(k) cat "]";
-    end if;
-    end for;
-    
-    end for;
-    
-    if ret eq "" then ret := str;
-    else ret := ret cat " ^ " cat str;
-    end if;
+        str := "";
+        for k in [0 .. #j-1] do
+            for l in [1..j[k+1]] do
+                if str eq "" then str := "y_" cat Sprint(k);
+                else str := "mult[" cat str cat "][" cat "y_" cat Sprint(k) cat "]";
+                end if;
+            end for;
+            
+        end for;
+        
+        if ret eq "" then ret := str;
+        else ret := ret cat " ^ " cat str;
+        end if;
     end for;
     
     return ret;
 end intrinsic;
-    
-    
-    /////////////////////////////////////////////////
-    //
-    // find the characteristic polynomial of frobenius on nonprimitive cohomology.
-    // input list of point counts over F_2^k, k = 1,..., 11.
-    /////////////////////////////////////////////////
-    
+
+
+/////////////////////////////////////////////////
+//
+// find the characteristic polynomial of frobenius on nonprimitive cohomology.
+// input list of point counts over F_2^k, k = 1,..., 11.
+/////////////////////////////////////////////////
+
 CONSTQt_<t> := PolynomialRing(Rationals());
 CONSTCs_<s> := PolynomialRing(ComplexField(30));
-    
-intrinsic Charpoly(list::SeqEnum[RngIntElt]) -> RngUPolElt
-    {input list of point counts over F_2^k, k = 1,..., 11, returns charpoly of frobenius on nonprimitive cohomology.}
+
+intrinsic Charpoly(list::SeqEnum[RngIntElt]) -> RngUPolElt, RngIntElt, MonStgElt
+{input list of point counts over F_2^k, k = 1,..., 11, 
+returns the characteristic polynomial of Frobenius acting on nonprimitive cohomology.}
+
     tr := [(list[m] - 1 - 2^m - 4^m - 8^m - 16^m)/4^m : m in [1..11]];
     c := [];
     c[1] := -tr[1];
     for k in [2..11] do
         c[k] := (tr[k] + &+[c[i]*tr[k-i] : i in [1..k-1]] )/(-k);
     end for;
-
+    
     p := t^22 + &+[c[i]*t^(22-i) : i in [1..11] ];
     g := CONSTQt_ ! (t^22 * Evaluate(p, 1/t));
-
-       // TODO: fix this.
+    
     if c[11] ne 0 then
         ret := p + Modexp(g, 1, t^11);
-        return ret;
+        return ret, 1;
     else
+        C := ComplexField(30);
         poly1 := p + Modexp(g, 1, t^11);
-        poly2 := p - Modexp(g, 1, t^11);
         roots1 := Roots(Evaluate(poly1, s));
-        roots2 := Roots(Evaluate(poly2, s));
         mods1 := [Modulus(roots1[i][1]) : i in [1..#roots1]];
-        mods2 := [Modulus(roots2[i][1]) : i in [1..#roots2]];
-
-    one := ComplexField(30)! 1;
-    if [Integers()! mods1[i] eq one : i in [1..#mods1] ] eq [true  : i in [1..#mods1] ] then
-        return poly1;
-        else return poly2;
-    end if;
+        
+        if &and [Abs(mods1[i] - 1) lt 1E-30 : i in [1..#mods1] ] then
+            return poly1, 1, "middle coeff zero";
+        else
+            poly2 := p - Modexp(g, 1, t^11);
+            roots2 := Roots(Evaluate(poly2, s));
+            mods2 := [Modulus(roots2[i][1]) : i in [1..#roots2]];
+            
+            if &and [Abs(mods2[i] - 1) lt 1E-30 : i in [1..#mods2] ] then
+                return poly2, -1, "middle coeff zero";
+            else
+                error "Something went wrong in zeta function computation.";
+            end if;
+        end if;
 
     end if;
     
 end intrinsic;
-        
+    
+    
