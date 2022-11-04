@@ -94,7 +94,7 @@ COMPUTE_CHARPOLY_ALREADY_LOADED := true;
 end if;
 
 
-function AddingtonAuelStandardForm(cubic)
+function AddingtonAuelStandardForm(cubic : Nonflat:=false)
     // Transforms a cubic into a form as outlined in Addington-Auel Section 3.
     
     k := GF(2);
@@ -123,12 +123,15 @@ function AddingtonAuelStandardForm(cubic)
 	I := Saturation(ideal<R | [A, B, C, D, E, F]>) ;
 	somesing := Scheme(ProjectiveSpace(R), [B, D, E]);
 	somesingpts := Points(somesing);
-	if 1 in I and #somesingpts ne 0 then
+        
+        if Nonflat and #somesingpts ne 0 then
+            break;
+        elif 1 in I and #somesingpts ne 0 then
             break;
 	end if;
     end for;
 
-    if (1 notin I) or (#somesingpts eq 0) then
+    if (1 notin I and not Nonflat) or (#somesingpts eq 0) then
 	error "Cannot convert cubic into Addington-Auel standard form.";
     end if;
 
@@ -189,7 +192,7 @@ function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
     return 0;
 end function;
     
-function PointCounts(cubic : ExecNum:=false, Maxq:=11)
+function PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false)
     // This function is mostly based off of 
     // Section 3 of Addington-Auel. See loc. cit. for details. 
 
@@ -200,7 +203,10 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11)
 
     // Now compute coefficients for the conic bundle fibration
     // that will be fed into C++ point counting code.
-    g, conicCoeffs := AddingtonAuelStandardForm(cubic);
+    if Nonflat then
+     g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat:=true);
+     else   g, conicCoeffs := AddingtonAuelStandardForm(cubic);
+    end if;
     A, B, C, D, E, F := Explode(conicCoeffs);
     a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
     discCoeffs := [a,b,c,d];
