@@ -1,6 +1,7 @@
 .auto
 *~
 *.out
+*.sage.py
 coeffs.h
 *.sig
 example16.txt
