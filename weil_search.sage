@@ -1,6 +1,9 @@
 
 from sage.rings.polynomial.weil.weil_polynomials import WeilPolynomials
 
+# File location
+# /private/var/tmp/sage-9.6-current/local/var/lib/sage/venv-python3.10.3/lib/python3.10/site-packages/sage/rings/polynomial/weil/weil_polynomials.pyx
+
 
 # NOTE: Sutherland-Kedlaya Theorem 1 has a small typo about the normalization.
 
