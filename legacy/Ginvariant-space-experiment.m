@@ -1,5 +1,9 @@
 ///////////////////////////////////
 // cubics.m
+//
+// Legacy script to compute dimensions of various
+// G-invariant spaces. 
+
 
 k := GF(2);
 P5<[x]> := ProjectiveSpace(k, 5);
