@@ -94,6 +94,12 @@ end intrinsic;
 //
 /////////////////////////////////////////////////
 
+intrinsic Stabilizer(v :: ModGrpElt) -> GrpMat
+{Construct the stabilizer of `v` within the action group.}
+    G := ActionGroup(Parent(v));
+    return Stabilizer(G, v);    
+end intrinsic;
+    
 intrinsic CubicStabilizer(f :: RngMPolElt) -> GrpMat
 {Computes the stabilizer of a cubic form over F2 under the action of PGL_6.}
 
@@ -107,15 +113,15 @@ intrinsic CubicStabilizer(f :: RngMPolElt) -> GrpMat
     cub_action, pol_action, war_action := WarringActionMaps();
     
     // Compute stabilizer from the Polemic quotient.
-    StabvUp := Stabilizer(ActionGroup(Parent(vUp)), vUp);
+    StabvUp := Stabilizer(vUp);
     WQres   := Restriction(CONST_Warring_quo, StabvUp @@ pol_action);
 
     // Compute stabilizer from the Warring quotient.
-    StabvU := Stabilizer(ActionGroup(WQres), vU);    
+    StabvU := Stabilizer(vU);    
     Vres   := Restriction(CONST_V, StabvU @@ war_action);
 
     // Compute the stabilizer.
-    Stabv := Stabilizer(ActionGroup(Vres), v);
+    Stabv := Stabilizer(v);
 
     // Return the result within PGL_6
     return Stabv @@ cub_action;
@@ -206,7 +212,7 @@ Bit(f1)^g = Bit(f2). If it exists, also return the transformation `g`.}
     // This is v1 moved over the point [v2] in the Polemic quotient
         
     // Compute stabilizer from the Polemic quotient.
-    StabvUp := Stabilizer(GUp, vUp2);
+    StabvUp := Stabilizer(vUp2);
     WQres   := Restriction(CONST_Warring_quo, StabvUp @@ pol_action);
     
     bool, gU := IsConjugate(ActionGroup(WQres), vU1gUp1, vU2);
@@ -215,7 +221,7 @@ Bit(f1)^g = Bit(f2). If it exists, also return the transformation `g`.}
 
     
     // Compute the final refinement, if it exists.
-    StabvU2 := Stabilizer(ActionGroup(WQres), vU2);
+    StabvU2 := Stabilizer(vU2);
     Vres    := Restriction(CONST_V, StabvU2 @@ war_action);
     
     bool, gV := IsConjugate(ActionGroup(Vres), next_thing, v2);
