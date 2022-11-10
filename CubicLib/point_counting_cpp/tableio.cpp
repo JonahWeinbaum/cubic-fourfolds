@@ -6,6 +6,7 @@
 #include "tableio.h"
 
 const std::string dirname = "fqtables/";
+const std::string TEST_TABLE = "test_table";
 
 
 /////////////////
@@ -124,36 +125,6 @@ unsigned** read_table(int size1, int size2, std::string fname){
   return table;
 }
 
-/*
-unsigned*** read_table(int size1, int size2, int size3, std::string fname){
-
-  unsigned*** table = new unsigned**[size1];
-  for (unsigned i = 0; i < size1; i++) {
-    table[i] = new unsigned*[size2];
-    for (unsigned j = 0; j < size2; j++) {
-      table[i][j] = new unsigned[size3];
-      for (unsigned k = 0; k < size3; k++)
-	table[i][j][k] = 0;
-    }
-  }
-
-  // Extract data from file.
-  // int N = size1 * size2 * size3;
-  // unsigned* blah = read_table(N, fname);
-
-  
-  // Extract data into the array
-  std::ifstream file;
-  file.open(dirname + fname, std::ios_base::binary);
-  for (unsigned i = 0; i < size1; i++)
-    for (unsigned j = 0; j < size2; j++)
-      file.read((char*)(table[i][j]), sizeof(unsigned) * size3);
-
-  file.close();
-  return table;
-}
-*/
-
 
 unsigned*** read_table(int size1, int size2, int size3, std::string fname){
 
@@ -181,6 +152,12 @@ unsigned*** read_table(int size1, int size2, int size3, std::string fname){
 // Testing
 //
 
+void remove_test_table() {
+  std::string namen = dirname + TEST_TABLE;
+  std::remove(namen.c_str());
+  return;
+}
+
 int basic_test_table() {
 
   int q = 4;
@@ -193,8 +170,8 @@ int basic_test_table() {
     }
   }
 
-  write_table(table, q, q, "test");
-  unsigned** new_table = read_table(q, q, "test");
+  write_table(table, q, q, TEST_TABLE);
+  unsigned** new_table = read_table(q, q, TEST_TABLE);
 
   for (int i = 0; i < q; i++){
     for (int j = 0; j < q; j++){
@@ -208,8 +185,8 @@ int basic_test_table() {
 
 
 int test_1_table(unsigned* table, int size1) {
-  write_table(table, size1, "test_bigger");
-  unsigned* new_table = read_table(size1, "test_bigger");
+  write_table(table, size1, TEST_TABLE);
+  unsigned* new_table = read_table(size1, TEST_TABLE);
 
   for (int i = 0; i < size1; i++)
     if (table[i] != new_table[i])
@@ -219,8 +196,8 @@ int test_1_table(unsigned* table, int size1) {
 }
 
 int test_2_table(unsigned** table, int size1, int size2) {
-  write_table(table, size1, size2, "test_bigger");
-  unsigned** new_table = read_table(size1, size2, "test_bigger");
+  write_table(table, size1, size2, TEST_TABLE);
+  unsigned** new_table = read_table(size1, size2, TEST_TABLE);
 
   for (int i = 0; i < size1; i++)
     for (int j = 0; j < size2; j++)
@@ -232,8 +209,8 @@ int test_2_table(unsigned** table, int size1, int size2) {
 
 int test_3_table(unsigned*** table, int size1, int size2, int size3) {
 
-  write_table(table, size1, size2, size3, "test_bigger");
-  unsigned*** new_table = read_table(size1, size2, size3, "test_bigger");
+  write_table(table, size1, size2, size3, TEST_TABLE);
+  unsigned*** new_table = read_table(size1, size2, size3, TEST_TABLE);
 
   for (int i = 0; i < size1; i++)
     for (int j = 0; j < size2; j++)

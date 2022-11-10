@@ -8,6 +8,7 @@ unsigned* read_table(int size, std::string fname);
 unsigned** read_table(int size1, int size2, std::string fname);
 unsigned*** read_table(int size1, int size2, int size3, std::string fname);
 
+void remove_test_table();
 int basic_test_table();
 int test_1_table(unsigned* table, int size1);
 int test_2_table(unsigned** table, int size1, int size2);

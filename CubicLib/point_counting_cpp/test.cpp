@@ -177,5 +177,8 @@ int big_test() {
   
   test_3_table(quadratic_roots, 2, q, q);
   test_3_table(depressed_cubic_roots, 3, q, q);
+
+  // If nothing prints, the test is successful.
+  remove_test_table();
   return 0;
 }
