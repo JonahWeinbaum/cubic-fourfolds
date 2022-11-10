@@ -52,6 +52,12 @@ intrinsic GetBitMap() -> .
     return CONST_Bit;
 end intrinsic;
 
+intrinsic StandardCubicModule() -> ModGrp
+{Return CubicLib's internal GModules.}
+    return CONST_V, CONST_Bit;
+end intrinsic;
+
+
 /////////////////////////////////////////////////
 //
 // Warring-like subspaces
@@ -66,6 +72,21 @@ CONST_Polemic := sub<CONST_V | CONST_Bit(CONST_R.1^2 * CONST_R.2)>;
 CONST_Polemic_quo, CONST_to_polemic_quo := quo<CONST_V | CONST_Polemic>;
 CONST_Warring_quo, CONST_to_warring_quo := quo<CONST_V | CONST_Warring>;
 
+intrinsic WarringFiltration(v) -> ModGrpElt, ModGrpElt, ModGrpElt
+{Given a vector `v` of length 56 representing a cubic, return the images
+`v`, `vU`, `vUp` in the Warring filtration.
+
+This function is very picky about its domain. See StandardCubicModule.}
+    return v, CONST_to_warring_quo(v), CONST_to_polemic_quo(v);
+end intrinsic;
+
+intrinsic WarringActionMaps() -> Map, Map, Map
+{}
+    cub_action := GModuleAction(CONST_V);
+    pol_action := GModuleAction(CONST_Polemic_quo);
+    war_action := GModuleAction(CONST_Warring_quo);    
+    return cub_action, pol_action, war_action;
+end intrinsic;
 
 /////////////////////////////////////////////////
 //
@@ -80,15 +101,11 @@ intrinsic CubicStabilizer(f :: RngMPolElt) -> GrpMat
     // as described in the paper.
     
     // Images of f under the standard filtration.
-    v   := CONST_Bit(f);
-    vU  := CONST_to_warring_quo(v);
-    vUp := CONST_to_polemic_quo(v);
+    v, vU, vUp := WarringFiltration(CONST_Bit(f));
 
     // Action maps
-    cub_action := GModuleAction(CONST_V);
-    pol_action := GModuleAction(CONST_Polemic_quo);
-    war_action := GModuleAction(CONST_Warring_quo);
-
+    cub_action, pol_action, war_action := WarringActionMaps();
+    
     // Compute stabilizer from the Polemic quotient.
     StabvUp := Stabilizer(ActionGroup(Parent(vUp)), vUp);
     WQres   := Restriction(CONST_Warring_quo, StabvUp @@ pol_action);
@@ -124,6 +141,89 @@ intrinsic IsSmooth(f :: RngMPolElt) -> BoolElt
     X := Scheme(PP, f);
     return IsNonSingular(X);
 end intrinsic;
+
+
+function ConjugatingMatrix(grp, X, Y)
+    // This code determines whether 2 cubics f1, f2 are in the same PGL6-orbit, and if they are,
+    // gives a matrix such that f1^g = f2.
+
+    // Magma annoyingly will not compute conjugating matrix, instead we have to recast
+    // everything as a permuation group using the OrbitAction intrinsic
+    
+    map, permgp, matgp := OrbitAction(grp, {X,Y});
+
+    bool, g := IsConjugate(permgp, map(X), map(Y));
+    
+    if not IsConjugate(permgp, map(X), map(Y)) then
+        return false, "not conjugate";
+    end if;
+
+    return bool, g @@ map;
+end function;
+
+intrinsic IsConjugate(G::GrpMat, v::ModGrpElt, w::ModGrpElt) -> BoolElt, GrpMatElt
+{Checks if G sends v to w, and if so, returns a matrix which does so.}
+
+    assert G cmpeq ActionGroup(Parent(v));
+    
+    mp, permgp, matgp := OrbitAction(G, {v,w});
+    bool, g := IsConjugate(permgp, mp(v), mp(w));
+
+    if bool then
+        return bool, g @@ mp;
+    else
+        return false;
+    end if;
+end intrinsic;
+
+
+intrinsic IsEquivalentCubics(f1, f2) -> BoolElt, GrpMatElt
+{Given two cubic forms f1, f2, determine if there is some matrix g in G such that 
+Bit(f1)^g = Bit(f2). If it exists, also return the transformation `g`.}
+
+    // Images of f under the standard filtration.
+    v1, vU1, vUp1 := WarringFiltration(CONST_Bit(f1));
+    v2, vU2, vUp2 := WarringFiltration(CONST_Bit(f2));
+
+    Wp := Parent(vUp1);
+    W  := Parent(vUp2); 
+
+    // Action maps
+    cub_action, pol_action, war_action := WarringActionMaps();
+
+    // Rename action maps so Jack's code works.
+    upmap := pol_action;
+    umap  := war_action;
+    vmap  := cub_action;
+    
+    GUp := ActionGroup(Parent(vUp1));
+    GU  := ActionGroup(Parent(vU1));
+    
+    bool, gUp := IsConjugate(GUp, vUp1, vUp2);
+    if bool eq false then return false; end if;
+    vU1gUp1 := vU1^(umap(gUp @@ pol_action));
+
+    // This is v1 moved over the point [v2] in the Polemic quotient
+        
+    // Compute stabilizer from the Polemic quotient.
+    StabvUp := Stabilizer(GUp, vUp2);
+    WQres   := Restriction(CONST_Warring_quo, StabvUp @@ pol_action);
+    
+    bool, gU := IsConjugate(ActionGroup(WQres), vU1gUp1, vU2);
+    if bool eq false then return false; end if;
+    next_thing := (v1^(vmap(gUp @@ upmap)))^(vmap(gU @@ umap));
+
+    
+    // Compute the final refinement, if it exists.
+    StabvU2 := Stabilizer(ActionGroup(WQres), vU2);
+    Vres    := Restriction(CONST_V, StabvU2 @@ war_action);
+    
+    bool, gV := IsConjugate(ActionGroup(Vres), next_thing, v2);
+    if bool eq false then return false; end if;
+
+    return true, (gUp @@ upmap) * (gU @@ umap) * (gV @@ vmap);
+end intrinsic;
+
 
 
 /////////////////////////////////////////////////
