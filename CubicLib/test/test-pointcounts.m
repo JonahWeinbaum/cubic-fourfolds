@@ -1,5 +1,5 @@
 AttachSpec("CubicLib.spec");
-load "computecharpoly.m";
+//load "computecharpoly.m";
 
 //////////////////////////////////////////////
 // Script start
@@ -52,6 +52,11 @@ function TestPointCounts(cubic : ExecNum:=false, Nonflat:=false)
     return true;
 end function;
 
+////////////////////////////
+// Tests Begin
+
+// Ambients
+P5<[x]> := ProjectiveSpace(GF(2), 5);
 
 load "test/test-cubics.m"; // Gives us a list of cubics.
 

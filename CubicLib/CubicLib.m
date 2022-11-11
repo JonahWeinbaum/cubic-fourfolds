@@ -284,7 +284,8 @@ intrinsic deserialize(byteseq) -> RngMPolElt
     return seq;
 end intrinsic;
 
-intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false) -> SeqEnum
+intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false)
+          -> SeqEnum
 {Loads the precomputed orbit data.}
 
     ZEROCUBIC := [0 : i in [1..56]];
@@ -335,6 +336,10 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false) -> S
 	     k;
 	 end for;
 
+    if not BitList then
+        orbdata := [[BitListToCubic(f) : f in lst] : lst in orbdata];
+    end if;
+    
     if Flat then
 	return &cat orbdata;
     else
