@@ -44,10 +44,11 @@ for form in echforms do
         eval3bas1 := Eltseq(eval3)[1];
         eval3bas2 := Eltseq(eval3)[2];
 
-        monoevaluated[form][1] := BitwiseOr(ShiftLeft(monoevaluated[form][1], 1), Integers()!eval1);
-        monoevaluated[form][2] := BitwiseOr(ShiftLeft(monoevaluated[form][2], 1), Integers()!eval2);
-        monoevaluated[form][3] := BitwiseOr(ShiftLeft(monoevaluated[form][3], 1), Integers()!eval3bas1);
-        monoevaluated[form][4] := BitwiseOr(ShiftLeft(monoevaluated[form][4], 1), Integers()!eval3bas2);
+        evals := [Integers() ! x : x in [eval1, eval2, eval3bas1, eval3bas2]];
+        for i in [1..4] do
+            monshiftLeft := ShiftLeft(monoevaluated[form][i], 1);
+            monoevaluated[form][i] := BitwiseOr(monshiftLeft, evals[i]);
+        end for;
     end for;
 end for;
 
