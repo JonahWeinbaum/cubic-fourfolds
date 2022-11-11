@@ -1,4 +1,4 @@
-Attach("CubicLib.m");
+AttachSpec("../CubicLib/CubicLib.spec");
 
 // Load Point counting function.
 load "computecharpoly.m";

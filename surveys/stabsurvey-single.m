@@ -1,7 +1,6 @@
-Attach("CubicLib.m");
+AttachSpec("../CubicLib/CubicLib.spec");
 
 // Load Point counting function.
-load "computecharpoly.m";
 orbdata := LoadCubicOrbitData(: Flat, Quick); // 2 minute load.
 
 for i in [1..20] do

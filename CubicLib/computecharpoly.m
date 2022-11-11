@@ -2,6 +2,11 @@ SetColumns(0);
 
 //////////////////////////////////////////////
 // Script start
+AttachSpec("CubicLib.spec");
+//load "data-processing/read-data-lines-index.m";
+//load "data-serialization/dataprocessing-lines.m";
+
+lines := ReadLines();
 
 if not assigned COMPUTE_CHARPOLY_ALREADY_LOADED then
 //Code to get lines
@@ -15,10 +20,10 @@ k4 := RSpace(k, 4);
 G_4 := GL(6, F4);
 P5_4<[x]> := ProjectiveSpace(F4, 5);
 R_4 := CoordinateRing(P5_4);
-
 V_4, Bit_4 := GModule(G_4, R_4, 3);
 
-echforms := {EchelonForm(M) : M in Hom(k4, k6) | Rank(M) eq 4};
+    
+echforms := lines;
 
 ptsonlines := AssociativeArray();
 monoevaluated := AssociativeArray();
