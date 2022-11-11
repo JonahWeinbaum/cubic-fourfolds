@@ -6,7 +6,7 @@ AttachSpec("CubicLib.spec");
 //load "data-processing/read-data-lines-index.m";
 //load "data-serialization/dataprocessing-lines.m";
 
-lines := ReadLines();
+lines := ReadLinesIndex();
 
 if not assigned COMPUTE_CHARPOLY_ALREADY_LOADED then
 //Code to get lines
