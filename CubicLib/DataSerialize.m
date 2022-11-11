@@ -1,6 +1,21 @@
-Attach("CubicLib.m");
-Attach("DataRead.m");
-lines := ReadLinesIndex();
+/////////////////////////////////////////////////////////
+//
+// Serialization and Deserialization functionality.
+//
+/////////////////////////////////////////////////////////
+
+intrinsic DeserializeLine(byteseq :: SeqEnum) -> ModMatFldElt
+{Given a sequence of 24 bits representing a line, return the associated 4 x 6 matrix.
+The ordering of the entries is Magma's standard order.}
+        
+    ret := [];
+    seq := [];
+    for byte in byteseq do
+        seq cat:= [ BitwiseAnd(ShiftRight(byte, 8-i), 1): i in [1..8]];
+    end for;
+
+    return Matrix(GF(2), 4, 6, seq); 
+end intrinsic;
 
 intrinsic SerializeLine(form :: ModMatFldElt) -> SeqEnum
 {Given an echelon form, convert it into a sequence of bytes.}
@@ -20,57 +35,50 @@ intrinsic SerializeLine(form :: ModMatFldElt) -> SeqEnum
     return byteseq;
 end intrinsic;
 
-intrinsic DeserializeLine(byteseq :: SeqEnum) -> ModMatFldElt
-{Given a sequence of 24 bits representing a line, return the associated 4 x 6 matrix.
-The ordering of the entries is Magma's standard order.}
-        
-    ret := [];
+
+/////////////////////////////////////////////////
+//
+// Reading Lines
+//
+/////////////////////////////////////////////////
+
+// Path to where linear subspace data is kept.
+LINES_SUBSPACE_DIRECTORY := "../../database/linear_subspaces/lines_through_cubics/";
+PLANES_SUBSPACE_DIRECTORY := "../../database/linear_subspaces/planes_through_cubics/";
+
+
+intrinsic ReadLinesIndex() -> SeqEnum 
+{Reads all lines in P5(F2) in a consistent ordering that will be used by calculations. 
+ Each line is stored as a matrix whose rows specify the linear equations cutting out the line.} 
+    lines := [];
+
+    name := Sprintf(LINES_SUBSPACE_DIRECTORY * "lines.data");
     seq := [];
-    for byte in byteseq do
-        seq cat:= [ BitwiseAnd(ShiftRight(byte, 8-i), 1): i in [1..8]];
-    end for;
+    file := Read(name);
 
-    return Matrix(GF(2), 4, 6, seq); 
-end intrinsic;
+    currloc := 1;
 
-intrinsic SerializeLinesThrough(linesthrough:: SeqEnum) -> SeqEnum
-{Given a set of lines, convert it to a sequence of bytes.}
-    byteseq := [];
-    for i in [0..81] do
-        bitstring := 0;
-        bitstring := ShiftLeft(bitstring, 8);
-        for j in [1..8] do 
-            if i*8 + j in [652..656] then 
-                bitstring := BitwiseOr(bitstring, ShiftLeft(0, 8-j));
-                continue;
-            end if;
-            if lines[i*8 + j] in linesthrough then
-                bitstring := BitwiseOr(bitstring, ShiftLeft(1, 8-j));
-            end if;
-        end for;
-        Append(~byteseq, bitstring);
-    end for;
+    while true do
+   	//Deserialize 3 Bytes and Advance File Pointer 
+	for i in [1..3] do   
+	    byte := StringToCode(file[currloc]);
+	    seq cat:= [byte];
+	    currloc := currloc + 1;
 
-    return byteseq;
+	end for;
+    	Append(~lines, DeserializeLine(seq));
+    	seq := [];
+
+	if currloc eq #file + 1 then
+	    break;
+	end if; 
+
+    end while;
+    return lines;
 end intrinsic;
 
 
 
-intrinsic DeserializeLinesThrough(byteseq:: SeqEnum) -> SeqEnum
-{Given a sequence of 82 bytes, with the first 651 bits each denoting whether the i'th line is
- contained in the cubic, and the remaining 5 zeroes for padding.}
-    linesthrough := [];
-    seq := [];
-    for i in [0..81] do
-        for j in [1..8] do
-            if BitwiseAnd(byteseq[i+1], ShiftLeft(1, 8-j)) ne 0 then
-                linesthrough cat:= [ lines[i*8 + j] ];
-            end if;
-        end for;
-    end for;
-    
-    return linesthrough;
-end intrinsic;
 /*
 intrinsic SerializePlane(form:: ModMatFldElt) -> SeqEnum
 {Given an echeleon form, convert it to a sequence of bytes.}
