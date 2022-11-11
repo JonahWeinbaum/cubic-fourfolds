@@ -1,5 +1,7 @@
-Attach("../cubic-fourfolds/CubicLib.m");
-load "data-processing/read-data-lines-index.m";
+AttachSpec("../../cubic-fourfolds/CubicLib/CubicLib.spec");
+
+/*
+lines := ReadLinesIndex();
 k := FiniteField(2);
 F4 := FiniteField(4);
 basF4 := Basis(F4);
@@ -90,8 +92,10 @@ function LinesThrough(cubic)
     return lines;
 end function;
 
-orbdata := LoadCubicOrbitData(: Flat:=true);
+*/
 
+
+orbdata := LoadCubicOrbitData(: Flat, BitList);
 
 k := FiniteField(2);
 G := GL(6, k);
@@ -100,11 +104,12 @@ R := CoordinateRing(P5);
 
 V, Bit := GModule(G, R, 3);
 
-fname := Sprintf("lines-data.data");
+//fname := Sprintf("../../database/linear_subspaces/lines_through_cubics/lines-in-orbits.data");
+fname := Sprintf("../../database/linear_subspaces/lines_through_cubics/avi-test.data");
 file := Open(fname, "w");
 i := 1;
 for f  in orbdata do
-    seq := serialize_line_info(LinesThrough(f@@Bit));
+    seq := SerializeLinesThrough(LinesThrough(f @@ Bit));
     WriteBytes(file, seq);
     if i/1000 in Integers() then
         i;
