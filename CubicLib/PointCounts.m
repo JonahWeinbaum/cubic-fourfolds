@@ -4,6 +4,11 @@
 // Contains the functions necessary to run the specialized pointcounting
 // code of CubicLib.
 
+//////////////////////////
+// CONSTANTS
+
+PATH_TO_LIB := PathToLib();
+
 k := FiniteField(2);
 F4 := FiniteField(4);
 basF4 := Basis(F4);
@@ -226,7 +231,7 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEn
 
     // Change to C++ directory
     entryDir := GetCurrentDirectory();
-    ChangeDirectory("point_counting_cpp");
+    ChangeDirectory(PATH_TO_LIB * "point_counting_cpp");
     
     // Prepare C++ code.
     ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
@@ -256,3 +261,4 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEn
     ChangeDirectory(entryDir);
     return point_counts;
 end intrinsic;
+

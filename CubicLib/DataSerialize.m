@@ -43,8 +43,9 @@ end intrinsic;
 /////////////////////////////////////////////////
 
 // Path to where linear subspace data is kept.
-LINES_SUBSPACE_DIRECTORY := "../../database/linear_subspaces/lines_through_cubics/";
-PLANES_SUBSPACE_DIRECTORY := "../../database/linear_subspaces/planes_through_cubics/";
+PATH_TO_LIB := PathToLib();
+LINES_SUBSPACE_DIRECTORY := PATH_TO_LIB*"../../database/linear_subspaces/lines_through_cubics/";
+PLANES_SUBSPACE_DIRECTORY:= PATH_TO_LIB*"../../database/linear_subspaces/planes_through_cubics/";
 
 
 intrinsic ReadLinesIndex() -> SeqEnum 

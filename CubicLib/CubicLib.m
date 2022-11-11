@@ -13,10 +13,13 @@
 //
 /////////////////////////////////////////////////
 
-ORBIT_DATA_DIRECTORY := "../../database/group_action/orbit_representatives/" *
+PATH_TO_LIB := PathToLib();
+
+ORBIT_DATA_DIRECTORY := PATH_TO_LIB * 
+                        "../../database/group_action/orbit_representatives/" *
                         "orbit_representative_in_V/";
 
-DATA_DIRECTORY := "../../database/zeta/";
+DATA_DIRECTORY := PATH_TO_LIB * "../../database/zeta/";
 CUBIC_ID_FILE := "orbrep.csv";
 ISSMOOTH_FILE := "smooth.csv";
 POINT_COUNTS_FILE := "point_counts.csv";

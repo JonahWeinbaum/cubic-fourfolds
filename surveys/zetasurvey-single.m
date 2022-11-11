@@ -1,6 +1,6 @@
 AttachSpec("../CubicLib/CubicLib.spec");
 
-orbdata := LoadCubicOrbitData(: Flat:=true, Quick:=true); // 2 minute load.
+orbdata := LoadCubicOrbitData(: Flat:=true, Quick:=true); // Test data.
 
 for i in [1..20] do
     f := orbdata[i];
