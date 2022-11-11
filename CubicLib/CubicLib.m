@@ -13,7 +13,10 @@
 //
 /////////////////////////////////////////////////
 
-DATA_DIRECTORY := "../data/zeta/";
+ORBIT_DATA_DIRECTORY := "../../database/group_action/orbit_representatives/" *
+                        "orbit_representative_in_V/";
+
+DATA_DIRECTORY := "../../database/zeta/";
 CUBIC_ID_FILE := "orbrep.csv";
 ISSMOOTH_FILE := "smooth.csv";
 POINT_COUNTS_FILE := "point_counts.csv";
@@ -117,11 +120,11 @@ intrinsic CubicStabilizer(f :: RngMPolElt) -> GrpMat
     WQres   := Restriction(CONST_Warring_quo, StabvUp @@ pol_action);
 
     // Compute stabilizer from the Warring quotient.
-    StabvU := Stabilizer(vU);    
+    StabvU := Stabilizer(WQres ! vU);    
     Vres   := Restriction(CONST_V, StabvU @@ war_action);
 
     // Compute the stabilizer.
-    Stabv := Stabilizer(v);
+    Stabv := Stabilizer(Vres ! v);
 
     // Return the result within PGL_6
     return Stabv @@ cub_action;
@@ -221,7 +224,7 @@ Bit(f1)^g = Bit(f2). If it exists, also return the transformation `g`.}
 
     
     // Compute the final refinement, if it exists.
-    StabvU2 := Stabilizer(vU2);
+    StabvU2 := Stabilizer(WQres ! vU2);
     Vres    := Restriction(CONST_V, StabvU2 @@ war_action);
     
     bool, gV := IsConjugate(ActionGroup(Vres), next_thing, v2);
@@ -295,7 +298,7 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false) -> S
     
     orbdata := [];
     time for k in range do
-	     name2 := Sprintf("../data/new/orbitreps-%o.data", k);
+	     name2 := Sprintf(ORBIT_DATA_DIRECTORY * "orbitreps-%o.data", k);
 	     seq := [];
 	     o2 := []; 
 	     file := Read(name2);
