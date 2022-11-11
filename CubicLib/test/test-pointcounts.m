@@ -1,4 +1,4 @@
-Attach("CubicLib.m");
+AttachSpec("CubicLib.spec");
 load "computecharpoly.m";
 
 //////////////////////////////////////////////

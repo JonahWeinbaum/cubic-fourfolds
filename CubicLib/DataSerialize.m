@@ -1,4 +1,6 @@
 Attach("CubicLib.m");
+Attach("DataRead.m");
+lines := ReadLinesIndex();
 
 intrinsic SerializeLine(form :: ModMatFldElt) -> SeqEnum
 {Given an echelon form, convert it into a sequence of bytes.}
@@ -31,7 +33,7 @@ The ordering of the entries is Magma's standard order.}
     return Matrix(GF(2), 4, 6, seq); 
 end intrinsic;
 
-intrinsic SerializeLinesThrough(lines:: SeqEnum) -> SeqEnum
+intrinsic SerializeLinesThrough(linesthrough:: SeqEnum) -> SeqEnum
 {Given a set of lines, convert it to a sequence of bytes.}
     byteseq := [];
     for i in [0..81] do
@@ -52,6 +54,8 @@ intrinsic SerializeLinesThrough(lines:: SeqEnum) -> SeqEnum
     return byteseq;
 end intrinsic;
 
+
+
 intrinsic DeserializeLinesThrough(byteseq:: SeqEnum) -> SeqEnum
 {Given a sequence of 82 bytes, with the first 651 bits each denoting whether the i'th line is
  contained in the cubic, and the remaining 5 zeroes for padding.}
@@ -67,7 +71,7 @@ intrinsic DeserializeLinesThrough(byteseq:: SeqEnum) -> SeqEnum
     
     return linesthrough;
 end intrinsic;
-
+/*
 intrinsic SerializePlane(form:: ModMatFldElt) -> SeqEnum
 {Given an echeleon form, convert it to a sequence of bytes.}
     byteseq := [];
@@ -149,3 +153,4 @@ intrinsic DeserializePlanesThrough(byteseq:: SeqEnum) -> SeqEnum
     
     return planesthrough;
 end intrinsic;
+*/

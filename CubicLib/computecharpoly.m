@@ -6,11 +6,12 @@ AttachSpec("CubicLib.spec");
 //load "data-processing/read-data-lines-index.m";
 //load "data-serialization/dataprocessing-lines.m";
 
-lines := ReadLinesIndex();
+
 
 if not assigned COMPUTE_CHARPOLY_ALREADY_LOADED then
-//Code to get lines
-
+    // This block of code is used to set up the LinesThrough
+    // function. Once it loads properly, 
+        
 k := FiniteField(2);
 F4 := FiniteField(4);
 basF4 := Basis(F4);
@@ -22,7 +23,8 @@ P5_4<[x]> := ProjectiveSpace(F4, 5);
 R_4 := CoordinateRing(P5_4);
 V_4, Bit_4 := GModule(G_4, R_4, 3);
 
-    
+
+lines := ReadLinesIndex();    
 echforms := lines;
 
 ptsonlines := AssociativeArray();
@@ -50,10 +52,10 @@ for form in echforms do
         eval3bas1 := Eltseq(eval3)[1];
         eval3bas2 := Eltseq(eval3)[2];
 
-        monoevaluated[form][1] := BitwiseOr (ShiftLeft(monoevaluated[form][1], 1), Integers()!eval1);
-        monoevaluated[form][2] := BitwiseOr (ShiftLeft(monoevaluated[form][2], 1), Integers()!eval2);
-        monoevaluated[form][3] := BitwiseOr (ShiftLeft(monoevaluated[form][3], 1), Integers()!eval3bas1);
-        monoevaluated[form][4] := BitwiseOr (ShiftLeft(monoevaluated[form][4], 1), Integers()!eval3bas2);
+        monoevaluated[form][1] := BitwiseOr(ShiftLeft(monoevaluated[form][1], 1), Integers()!eval1);
+        monoevaluated[form][2] := BitwiseOr(ShiftLeft(monoevaluated[form][2], 1), Integers()!eval2);
+        monoevaluated[form][3] := BitwiseOr(ShiftLeft(monoevaluated[form][3], 1), Integers()!eval3bas1);
+        monoevaluated[form][4] := BitwiseOr(ShiftLeft(monoevaluated[form][4], 1), Integers()!eval3bas2);
     end for;
 end for;
 
@@ -232,6 +234,10 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false)
         compileString := Sprintf("g++ -DWITHCACHE -DCOEFFSFILE='\"%o\"' tableio.cpp count.cpp -o %o", headerFile, execFile);
     end if;
 
+    // Change to C++ directory
+    entryDir := GetCurrentDirectory();
+    ChangeDirectory("point_counting_cpp");
+    
     // Prepare C++ code.
     ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
 
@@ -245,6 +251,7 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false)
     try
 	point_counts := [StringToInteger(out) : out in cppOutputs];
     catch e
+        ChangeDirectory(entryDir);
 	error "Error from C++. Received output: ", cppOutputs;
     end try;
 
@@ -254,7 +261,9 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false)
     if headerFile ne "coeffs.h" then
         System(Sprintf("rm %o", headerFile));
     end if;
-    
+
+    // Return to the current directory.
+    ChangeDirectory(entryDir);
     return point_counts;
 end function;
 

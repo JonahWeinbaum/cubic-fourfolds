@@ -10,7 +10,7 @@ intrinsic ReadLinesIndex() -> SeqEnum
  Each line is stored as a matrix whose rows specify the linear equations cutting out the line.} 
     lines := [];
 
-    name := Sprintf(LINES_SUBSPACE_DIRECTORY * "lines-index.data");
+    name := Sprintf(LINES_SUBSPACE_DIRECTORY * "lines.data");
     seq := [];
     file := Read(name);
 
@@ -32,8 +32,10 @@ intrinsic ReadLinesIndex() -> SeqEnum
 	end if; 
 
     end while;
+    return lines;
 end intrinsic;
 
+/*
 intrinsic ReadLines() -> SeqEnum
 {Reads data of lines through each cubic. Each line is stored as a matrix whose rows specify 
 the linear equations cutting out the line.}
@@ -57,10 +59,12 @@ the linear equations cutting out the line.}
 	Append(~linesthrough, DeserializeLinesThrough(seq));
 	seq := [];
 
+
 	if currloc eq #file + 1 then
 	    break;
 	end if; 
     end while;
+    return lines;
 end intrinsic;
 
 intrinsic ReadPlanesIndex() -> SeqEnum
@@ -91,4 +95,6 @@ Each plane is stored as a matrix whose rows specify the linear equations cutting
 	    break;
 	end if; 
     end while;
+    return planes;
 end intrinsic;
+*/
