@@ -1,17 +1,9 @@
-SetColumns(0);
-
 //////////////////////////////////////////////
-// Script start
-AttachSpec("CubicLib.spec");
-//load "data-processing/read-data-lines-index.m";
-//load "data-serialization/dataprocessing-lines.m";
+// PointCounts.m
+//
+// Contains the functions necessary to run the specialized pointcounting
+// code of CubicLib.
 
-
-
-if not assigned COMPUTE_CHARPOLY_ALREADY_LOADED then
-    // This block of code is used to set up the LinesThrough
-    // function. Once it loads properly, 
-        
 k := FiniteField(2);
 F4 := FiniteField(4);
 basF4 := Basis(F4);
@@ -68,12 +60,9 @@ function paritycalc(bitstr)
     return parity;
 end function;
 
-// Given a cubic polynomial f, return the set of lines through f.
-function LinesThrough(f)
 
-    // Type conversion back to bitstring.
-    //b := Reverse([Integers() ! Bit(f)[i] : i in [1..56]]);
-    //f := Seqint(b, 2);
+intrinsic LinesThrough(f :: RngMPolElt) -> SeqEnum
+{Given a cubic polynomial f, return the set of lines through f.}
 
     f := CubicToInt(f);    
     
@@ -95,14 +84,11 @@ function LinesThrough(f)
     end for;
 
     return lines;
-end function;
-
-COMPUTE_CHARPOLY_ALREADY_LOADED := true;
-end if;
+end intrinsic;
 
 
-function AddingtonAuelStandardForm(cubic : Nonflat:=false)
-    // Transforms a cubic into a form as outlined in Addington-Auel Section 3.
+intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
+{Transforms a cubic into a form as outlined in Addington-Auel Section 3.}
     
     k := GF(2);
     V6 := VectorSpace(k, 6);
@@ -159,7 +145,7 @@ function AddingtonAuelStandardForm(cubic : Nonflat:=false)
     newcoeffs := [Evaluate(co, Eltseq(yvec * ChangeRing(invM4, R))) : co in coeffs];
 
     return g, newcoeffs;
-end function;
+end intrinsic;
 
 
 function DiscriminantProjectionEquations(conicCoeffs)
@@ -179,6 +165,7 @@ end function;
     
 
 function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
+
     A, B, C, D, E, F := Explode(conicCoeffs);
     a, b, c, d := Explode(discCoeffs);
     
@@ -195,13 +182,18 @@ function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
 	       "    E = " cat CppInputString(E) cat ", \\" cat "\n" cat
 	       "    F = " cat CppInputString(F) cat "\n";
 
+    SetColumns(0);
     Write(fname, string : Overwrite);
     return 0;
 end function;
-    
-function PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false)
+
+intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEnum
+{Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
+
     // This function is mostly based off of 
-    // Section 3 of Addington-Auel. See loc. cit. for details. 
+    // Section 3 of Addington-Auel. See loc. cit. for details.
+    //
+    // The actual driver of this function is the C++ code in point_counting_cpp.
 
     k := GF(2);
     V6 := VectorSpace(k, 6);
@@ -211,17 +203,14 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false)
     // Now compute coefficients for the conic bundle fibration
     // that will be fed into C++ point counting code.
     if Nonflat then
-     g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat:=true);
-     else   g, conicCoeffs := AddingtonAuelStandardForm(cubic);
+        g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat:=true);
+    else
+        g, conicCoeffs := AddingtonAuelStandardForm(cubic);
     end if;
+    
     A, B, C, D, E, F := Explode(conicCoeffs);
     a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
     discCoeffs := [a,b,c,d];
-
-    
-    // Testing code.
-    /* X := Scheme(Proj(Parent(cubic)), cubic); */
-    /* print [#Points(X, GF(2^j)) : j in [1..4]]; */
 
     // Option to ensure parallel code doesn't fight over executable file.
     if ExecNum cmpeq false then
@@ -265,31 +254,4 @@ function PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false)
     // Return to the current directory.
     ChangeDirectory(entryDir);
     return point_counts;
-end function;
-
-
-/*
-// Zeta function stuff.
-function zetaFun()
-    // Stuff for zeta function.
-    tr := [(StringToInteger(Read(POpen("./a.out " cat Sprint(m), "r"))) - 1 - 2^m - 4^m - 8^m - 16^m)/4^m : m in [1..11]];
-    
-    c := [];
-    c[1] := -tr[1];
-    for k in [2..11] do
-	c[k] := (tr[k] + &+[c[i]*tr[k-i] : i in [1..k-1]] )/(-k);
-    end for;
-
-    p := t^22 + &+[c[i]*t^(22-i) : i in [1..11] ];
-    g := QQt ! (t^22 * Evaluate(p, 1/t));
-
-    // TODO: fix this.
-    if c[11] ne 0 then
-	ret := p + Modexp(g, 1, t^11);
-    else
-	ret := p - Modexp(g, 1, t^11);
-    end if;
-
-    return;
-end function;
-*/
+end intrinsic;
