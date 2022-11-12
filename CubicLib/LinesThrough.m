@@ -31,14 +31,20 @@ end intrinsic;
 
 
 intrinsic DeserializeLinesThrough(byteseq:: SeqEnum) -> SeqEnum
-{Given a sequence of 82 bytes, with the first 651 bits each denoting whether the i'th line is
- contained in the cubic, and the remaining 5 zeroes for padding.}
+{ Given a sequence of 82 bytes, return the associated list of lines. The first 651 bits are 
+interpreted as a boolean, where the i-th bit is 1 if the 'i'th line is in the associated list.
+The remaining 5 zeroes for padding.
+
+One further technicality -- we only guarantee 
+
+    Set(lst) eq Set(DeserializeLinesThrough(SerializeLinesThrough(lst)))
+}
     linesthrough := [];
     seq := [];
     for i in [0..81] do
         for j in [1..8] do
             if BitwiseAnd(byteseq[i+1], ShiftLeft(1, 8-j)) ne 0 then
-	    linesthrough cat:= [ CONST_lines[i*8 + j] ];
+	        linesthrough cat:= [ CONST_lines[i*8 + j] ];
             end if;
         end for;
     end for;
