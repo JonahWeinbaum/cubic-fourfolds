@@ -42,11 +42,19 @@ def transcendental_part(f):
     return q
 
 # Conduct comparison.
-transc_iter = (transcendental_part(f) for f in zeta_funcs)
+import multiprocessing as mp
 
-flag = True
-for f in transc_iter:
+def check_transc_task(f):
     if f not in k3arch and f.degree() <= 20:
         print(f)
-        flag = False
-        break
+        return False
+    else:
+        return True
+        
+transc_iter = (transcendental_part(f) for f in zeta_funcs)
+
+if __name__ == '__main__':
+    with mp.Pool(40) as P:
+        weil_check_lst = P.map(check_transc_task, transc_iter)
+
+
