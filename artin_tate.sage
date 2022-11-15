@@ -4,7 +4,7 @@ import os, time
 DATA_PATH = os.path.join("/Users/f004584/Dropbox (Dartmouth College)/Prj-cubics/cubic-F2/",
                          "database/zeta_functions/")
 
-if False:
+if True:
     # Polynomial ring.
     R.<x> = PolynomialRing(Integers())
 
@@ -59,7 +59,7 @@ def transcendental_part(f):
 
 # Given a characteristic polynomial of Frobenius, divide out by all factors
 # of (1-x) and evaluate at 2. 
-def zeta_special_value(f, v):
+def zeta_special_value(f):
     g = remove_factor(f, 1-x)
     return g(2)
     
@@ -70,17 +70,11 @@ def zeta_special_value(f, v):
 # Conduct comparison.
 import multiprocessing as mp
 
-def check_transc_task(f):
-    if f not in k3arch and f.degree() <= 20:
-        print(f)
-        return False
-    else:
-        return True
-        
-transc_iter = (transcendental_part(f) for f in zeta_funcs)
 
 if __name__ == '__main__':
+    a = time.time()
     with mp.Pool(40) as P:
-        weil_check_lst = P.map(check_transc_task, transc_iter)
+        artin_tate_values = P.map(zeta_special_value, zeta_funcs)
 
 
+    print("Task completed: ", time.time() - a)
