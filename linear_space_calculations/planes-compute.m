@@ -1,19 +1,24 @@
 
+Attach("CubicLib.spec");
 
+/*planes is the 1395 echelon forms cutting out planes in P5. fourlines is a choice of four lines on each cubic, while 
 
-load "data-processing/read-data-planes-index.m";
-load "data-processing/read-data-lines-index.m";
-load "data-serialization/dataprocessing-planes.m";
-load "data-serialization/dataprocessing-lines.m";
+*/
+k := FiniteField(2);
+planes := {@ EchelonForm(M) : M in Hom(VectorSpace(k, 3), VectorSpace(k, 6)) | Rank(M) eq 3 @};  
 
 fourlines := [];
+lines := ReadLinesIndex();
 
 for i in  [1..#planes] do
 l := [ln : ln in lines | RowSpace(planes[i]) subset RowSpace(ln) ];
-fourlines[i] := {l[1], l[2], l[3], l[4]};
+fourlines[i] := {Index(lines,l[1]), Index(lines,l[2]), Index(lines,l[3]), Index(lines,l[4])};
 end for;
 
-load  "data-processing/read-data-lines.m";
+//Eventually replace with a .m script reading in serialized data.
+load "readlinesinorbitsdata.m";
+
+linesthrough := linesinorbitsdata;
 
 planesthrough := [];
 time for i in [1..#linesthrough] do
@@ -28,23 +33,21 @@ time for i in [1..#linesthrough] do
 end for;
 print "data computation finished";
 
-fname := "../data/new/planes-data.data";
-file := Open(fname, "w");
-
-time for through in planesthrough do
-WriteBytes(file, serialize_plane_info(through));
+planesthroughindexed := [];
+planeindices := AssociativeArray();
+for i in [1..#planes] do
+planeindices[planes[i]] := i;
 end for;
-print "data file writing finished;"
+
+for i in [1..#planesthrough] do
+planesthroughindexed[i] := [planeindices[p]: p in planesthrough[i]];
+end for;
+
+filename := "../..//database/linear_subspaces/planes_through_cubics/nonserialized-planes-data.csv";
+SetColumns(0);
+time for i in [1..#planesthroughindexed] do
+Write(filename, planesthroughindexed[i]);
+end for;
+print "data file writing finished";
 
 
-
-/*
-fourlineskeys := [ [Ar[ Matrix(w[i]) ] : i in [1..4]] : w in  fourlines];
-
-
-
-
-planesdatakeyed := [];
-for i in [1..85] do
-time planesdatakeyed[i]:= [ [j : j in [1..1395] | (fourlineskeys[j][1] in ld)  and (fourlineskeys[j][2] in ld) and (fourlineskeys[j][3] in ld) and (fourlineskeys[j][4] in ld)   ]      : ld in linesdatakeyed[i]];
-end for;*/
