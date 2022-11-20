@@ -16,9 +16,10 @@
 PATH_TO_LIB := PathToLib();
 
 ORBIT_DATA_DIRECTORY := PATH_TO_LIB * 
-                        "../../database/group_action/orbit_representatives/" *
+			"../../database/group_action/orbit_representatives/" *
                         "orbit_representative_in_V/";
 
+DATABASE_DIRECTORY := PATH_TO_LIB * "../../database/";
 DATA_DIRECTORY := PATH_TO_LIB * "../../database/zeta/";
 CUBIC_ID_FILE := "orbrep.csv";
 ISSMOOTH_FILE := "smooth.csv";
@@ -367,6 +368,11 @@ end intrinsic;
 
 // 4. Set of lines on it.
 // 5. Set of planes on it.
+
+intrinsic DatabaseDirectory() -> MonStgElt
+{Return the absolute path to the database folder.}
+    return DATABASE_DIRECTORY;
+end intrinsic;
 
 intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
 {}
