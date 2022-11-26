@@ -64,7 +64,11 @@ intrinsic StandardCubicModule() -> ModGrp
     return CONST_V, CONST_Bit;
 end intrinsic;
 
-
+intrinsic StandardCubicRing() -> ModGrp
+{Return CubicLib's internal GModules.}
+    return CONST_R;
+end intrinsic;
+          
 /////////////////////////////////////////////////
 //
 // Warring-like subspaces

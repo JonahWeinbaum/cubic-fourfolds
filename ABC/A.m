@@ -6,7 +6,7 @@
 // isolated singularities, is there such a line?
 
 AttachSpec("../CubicLib/CubicLib.spec");
-cubics := LoadCubicOrbitData(: Quick, Flat);
+cubics := LoadCubicOrbitData(: Flat);
 
 P6 := Proj(Parent(cubics[1]));
 mons1 := [P6.i : i in [1..Dimension(P6)+1]];
@@ -16,7 +16,9 @@ function LineToScheme(PP, mat)
     return Scheme(PP, [Polynomial(Eltseq(row), mons1) : row in Rows(mat)]);
 end function;
 
-function CheckJackA(f)    
+function CheckJackA(f)
+    X := Scheme(P6, f);
+    sing := SingularSubscheme(X);
     lines := LinesThrough(f);
     for ll in lines do
         L := LineToScheme(P6, ll);

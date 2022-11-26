@@ -226,7 +226,11 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEn
     else
 	execFile := Sprintf("a.%o.out", ExecNum);
         headerFile := Sprintf("coeffs%o.h", ExecNum);
-        compileString := Sprintf("g++ -DWITHCACHE -DCOEFFSFILE='\"%o\"' tableio.cpp count.cpp -o %o", headerFile, execFile);
+
+        optionsString := Sprintf("g++ -DWITHCACHE -DCOEFFSFILE='\"%o\"'", headerFile);
+        argsString := Sprintf("tableio.cpp count.cpp -o %o", execFile);
+        
+        compileString := optionsString * " " * argsString;
     end if;
 
     // Change to C++ directory
