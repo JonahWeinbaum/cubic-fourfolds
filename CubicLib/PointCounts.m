@@ -229,7 +229,7 @@ intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
 end intrinsic;
 
 
-intrinsic DiscriminantProjectionEquations(conicCoeffs) -> Any, Any, Any, Any
+intrinsic DiscriminantProjectionEquations(conicCoeffs) -> SeqEnum
 {}
     A, B, C, D, E, F := Explode(conicCoeffs);
 
@@ -242,7 +242,7 @@ intrinsic DiscriminantProjectionEquations(conicCoeffs) -> Any, Any, Any, Any
     c := MonomialCoefficient(disc, y3);
     d := MonomialCoefficient(disc, 1);    
     
-    return a, b, c, d;
+    return [a, b, c, d];
 end intrinsic;
 
 
@@ -341,6 +341,7 @@ exceptional fibre for the conic fibration.}
     return cppCounts;
 end intrinsic;
 
+
 intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
 {Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
 
@@ -351,11 +352,8 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
 
     // Now compute coefficients for the conic bundle fibration
     // that will be fed into C++ point counting code.
-    g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);
-        
-    A, B, C, D, E, F := Explode(conicCoeffs);
-    a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
-    discCoeffs := [a,b,c,d];
+    g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);           
+    discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
 
     cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
     return CppCountCorrection(cppCounts, conicCoeffs);
@@ -367,9 +365,7 @@ In this version the cubic is assumed to be in Addington-Auel standard form.
 Primarily, this function is used for testing.}
 
     conicCoeffs := ConicFibrationCoefficients(cubic);
-    A, B, C, D, E, F := Explode(conicCoeffs);
-    a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
-    discCoeffs := [a,b,c,d];
+    discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
 
     cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
 
