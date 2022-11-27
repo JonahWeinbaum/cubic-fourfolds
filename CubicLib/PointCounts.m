@@ -298,6 +298,9 @@ exceptional fibre for the conic fibration.}
 
     elif base_dim eq 1 and (B eq 0) then
         correctionTerm := Zero(Prng);
+
+    elif base_dim eq 2 and ((A eq 0 and B eq 0) or (B eq 0 and C eq 0)) then
+        correctionTerm := - Q^3;
         
     elif base_dim eq 2 and (A eq 0 or C eq 0) then
         correctionTerm := -2 * Q^3;
