@@ -355,6 +355,12 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
     g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);           
     discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
 
+    // If we have a cone, it is easier to count the points directly.
+    if conicCoeffs[1..5] eq [0,0,0,0,0] then
+        cc := PointCountsMagma(conicCoeffs[6] : Maxq:=Maxq);
+        return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
+    end if;
+    
     cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
     return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;
@@ -367,6 +373,12 @@ Primarily, this function is used for testing.}
     conicCoeffs := ConicFibrationCoefficients(cubic);
     discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
 
+    // If we have a cone, it is easier to count the points directly.
+    if conicCoeffs[1..5] eq [0,0,0,0,0] then
+        cc := PointCountsMagma(conicCoeffs[6] : Maxq:=Maxq);
+        return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
+    end if;
+    
     cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
 
     return CppCountCorrection(cppCounts, conicCoeffs);
