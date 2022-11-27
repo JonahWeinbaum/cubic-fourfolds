@@ -92,6 +92,81 @@ intrinsic LinesThrough(f :: RngMPolElt) -> SeqEnum
     return lines;
 end intrinsic;
 
+intrinsic ConicFibrationCoefficients(cubic) -> SeqEnum
+{Given a cubic containing the line x1 = x2 = x3 = x4 = 0, return the coefficients
+of the conic fibration as polynomials in a new set of variables.}
+
+    R<y0, y1, y2, y3> := PolynomialRing(k, 4);
+    RR<y4, y5> := PolynomialRing(R, 4);
+ 
+    f := Evaluate(cubic, [y0, y1, y2, y3, y4, y5]);
+    A := MonomialCoefficient(f, y4^2);
+    B := MonomialCoefficient(f, y4*y5);
+    C := MonomialCoefficient(f, y5^2);
+    D := MonomialCoefficient(f, y4);
+    E := MonomialCoefficient(f, y5);
+    F := MonomialCoefficient(f, 1);
+    
+    return [A, B, C, D, E, F];
+end intrinsic;
+
+intrinsic CubicFromConicCoefficients(conicCoeffs, R) -> RngMPol
+{Produce a cubic with parent R from the conic fibration coefficients.}
+
+    vvec := [R.i : i in [1..4]];
+    x5 := R.5;
+    x6 := R.6;
+    mons := [x5^2, x5*x6, x6^2, x5, x6, 1];
+    
+    return &+[mons[i] * Evaluate(conicCoeffs[i], vvec) : i in [1..6]];    
+end intrinsic;
+
+intrinsic CorankTwoLocus(conicCoeffs) -> Sch
+{Return the corank 2 locus of the conic fibration.}
+
+    B := conicCoeffs[2];
+    D := conicCoeffs[4];
+    E := conicCoeffs[5];
+
+    R := Parent(B);
+    k := BaseRing(R);
+    
+    return Scheme(Proj(R), [B, D, E]);    
+end intrinsic;
+
+intrinsic StandardizeConicCoefficients(conicCoeffs) -> SeqEnum
+{Given a list of conic fibration coefficients, try to move a singular
+point of the discriminant to (0:0:0:1)}
+
+    B := conicCoeffs[2];
+    D := conicCoeffs[4];
+    E := conicCoeffs[5];
+
+    R := Parent(B);
+    k := BaseRing(R);
+    
+    somesing := Scheme(Proj(R), [B, D, E]);
+    somesingpts := Points(somesing);
+        
+    error if #somesingpts eq 0, "No rational points in rank 2 locus.";
+
+    // Check that the discriminantal quintic in P3 has singular point where by B=D=E=0, 
+    // and change coordinates so one of these singular points is in position (0:0:0:1).
+
+    V4 := VectorSpace(k, 4);
+    v  := V4 ! Eltseq(somesingpts[1]);
+    extBase := ExtendBasis([v], V4);
+    revextBase := Reverse(extBase); // Puts v at the bottom.
+
+    M4 := Matrix(revextBase)^(-1);
+    invM4 := M4^(-1);
+    
+    // Change coordinates to move the singular point.
+    yvec := Vector(R, [R.i : i in [1..4]]);
+    newcoeffs := [Evaluate(co, Eltseq(yvec * ChangeRing(invM4, R))) : co in conicCoeffs];
+
+    return newcoeffs;
+end intrinsic;
 
 intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
 {Transforms a cubic into a form as outlined in Addington-Auel Section 3.}
@@ -147,14 +222,15 @@ intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
     
     // Change coordinates to move the singular point.
     coeffs := [A, B, C, D, E, F];
-    yvec := Vector(R, [y0,y1,y2,y3]);
+    yvec := Vector(R, [y0, y1, y2, y3]);
     newcoeffs := [Evaluate(co, Eltseq(yvec * ChangeRing(invM4, R))) : co in coeffs];
 
     return g, newcoeffs;
 end intrinsic;
 
 
-function DiscriminantProjectionEquations(conicCoeffs)
+intrinsic DiscriminantProjectionEquations(conicCoeffs) -> Any, Any, Any, Any
+{}
     A, B, C, D, E, F := Explode(conicCoeffs);
 
     rrr<y0, y1, y2> := PolynomialRing(k, 3);
@@ -167,8 +243,8 @@ function DiscriminantProjectionEquations(conicCoeffs)
     d := MonomialCoefficient(disc, 1);    
     
     return a, b, c, d;
-end function;
-    
+end intrinsic;
+
 
 function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
 
@@ -193,6 +269,71 @@ function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
     return 0;
 end function;
 
+intrinsic FibrationBaseSchemeOnLine(conicCoeffs) -> Sch
+{}
+    R := Parent(conicCoeffs[1]);
+    P3 := Proj(R);
+    return Scheme(P3, conicCoeffs[1..3]);
+end intrinsic;
+
+intrinsic CppCountCorrection(cppCounts, conicCoeffs) -> SeqEnum
+{Add correction terms, amounting to changing P1 x P2 to the actual
+exceptional fibre for the conic fibration.}
+
+    // Determine the base scheme of the 3-dimensional conic system. This will
+    // determine the correct exceptional fibres.
+    Base := FibrationBaseSchemeOnLine(conicCoeffs);
+    base_dim := Dimension(Base);
+    
+    Prng<Q> := PolynomialRing(Integers());
+    skipOdd := false;
+
+    A, B, C, D, E, F := Explode(conicCoeffs);
+    
+    if base_dim eq 0 then
+        correctionTerm := Zero(Prng);
+        
+    elif base_dim eq 1 and (A eq 0 or C eq 0) then
+        correctionTerm := - Q^3;
+
+    elif base_dim eq 1 and (B eq 0) then
+        correctionTerm := Zero(Prng);
+        
+    elif base_dim eq 2 and (A eq 0 or C eq 0) then
+        correctionTerm := -2 * Q^3;
+
+    elif base_dim eq 2 and (B eq 0) then
+        correctionTerm := - Q^3;
+        
+    elif base_dim eq 2 and (A eq B and B eq C) then
+        // In this case, the base points are quadratic conjugates.
+        correctionTerm := -2 * Q^3;
+        skipOdd := true;
+        
+    elif base_dim eq 3 then
+        correctionTerm := - (Q+1) * Q;
+        
+    else
+        error "Case not accounted for.", conicCoeffs;
+    end if;
+
+    // Odd
+    if not skipOdd then
+        for i in [1..#cppCounts by 2] do
+            q := 2^i;
+            cppCounts[i] +:= Evaluate(correctionTerm, q);        
+        end for;
+    end if;
+
+    // Even
+    for i in [2..#cppCounts by 2] do
+        q := 2^i;
+        cppCounts[i] +:= Evaluate(correctionTerm, q);        
+    end for;
+
+    return cppCounts;
+end intrinsic;
+
 intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEnum
 {Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
 
@@ -201,28 +342,43 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEn
     //
     // The actual driver of this function is the C++ code in point_counting_cpp.
 
-    k := GF(2);
-    V6 := VectorSpace(k, 6);
-    R<y0, y1, y2, y3> := PolynomialRing(k, 4);
-    RR<y4, y5> := PolynomialRing(R, 4);
-
     // Now compute coefficients for the conic bundle fibration
     // that will be fed into C++ point counting code.
-    if Nonflat then
-        g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat:=true);
-    else
-        g, conicCoeffs := AddingtonAuelStandardForm(cubic);
-    end if;
-    
+    g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat:=Nonflat);
+        
     A, B, C, D, E, F := Explode(conicCoeffs);
     a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
     discCoeffs := [a,b,c,d];
 
+    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
+    return CppCountCorrection(cppCounts, conicCoeffs);
+end intrinsic;
+
+intrinsic PointCountsNoTransform(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
+{Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.
+In this version the cubic is assumed to be in Addington-Auel standard form.
+Primarily, this function is used for testing.}
+
+    conicCoeffs := ConicFibrationCoefficients(cubic);
+    A, B, C, D, E, F := Explode(conicCoeffs);
+    a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
+    discCoeffs := [a,b,c,d];
+
+    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
+
+    return CppCountCorrection(cppCounts, conicCoeffs);
+end intrinsic;
+
+intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=false, Maxq:=11) -> SeqEnum
+{Call the C++ point counting engine. The output of this function is the correct point counts
+*assuming* that the line defining the conic fibration lies in the smooth locus. Otherwise,
+useful information is produced, but one has to correct the output.}
+    
     // Option to ensure parallel code doesn't fight over executable file.
     if ExecNum cmpeq false then
 	execFile := "a.out";
         headerFile := "coeffs.h";
-        compileString := Sprintf("g++ tableio.cpp count.cpp -o %o", execFile);
+        compileString := Sprintf("g++ -DWITHCACHE tableio.cpp count.cpp -o %o", execFile);
     else
 	execFile := Sprintf("a.%o.out", ExecNum);
         headerFile := Sprintf("coeffs%o.h", ExecNum);
@@ -266,3 +422,13 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEn
     return point_counts;
 end intrinsic;
 
+intrinsic PointCountsMagma(cubic : Maxq:=3) -> SeqEnum
+{Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.
+Primarily used for testing.
+}
+    R := Parent(cubic);
+    P := Proj(R);
+    X := Scheme(P, cubic);
+
+    return [#RationalPoints(X, GF(2^i)) : i in [1..Maxq]];
+end intrinsic;

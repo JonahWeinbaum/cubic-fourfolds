@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
   //
   //     diff = #double cover of Delta - #Delta
   //
-  // where Delta is the discriminantal hypersurface for the (flat) conic bundle.
+  // where Delta is the discriminantal hypersurface for the conic fibration.
   // The precise formula is
   //
   //     #X(Fq) = q^4 + q^3 + q * diff + q + 1.
