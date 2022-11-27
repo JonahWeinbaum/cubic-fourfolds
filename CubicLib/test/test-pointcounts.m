@@ -35,14 +35,14 @@ end function;
 
 
 // Checks if C++ point counting matches magma's point counts.
-function TestPointCounts(cubic : ExecNum:=false, Nonflat:=false)
+function TestPointCounts(cubic : ExecNum:=false)
     r<[x]> := PolynomialRing(FiniteField(2), 6);
     cubic := r ! cubic;
     Pcubic := ProjectiveSpace(Parent(cubic));
     X := Scheme(Pcubic, cubic);
     
     Maxq := 4;
-    ptcts := PointCounts(cubic : Maxq := Maxq, ExecNum:=ExecNum, Nonflat:=Nonflat);
+    ptcts := PointCounts(cubic : Maxq := Maxq, ExecNum:=ExecNum);
     ptcounts := [ptcts[i] : i in [1..Maxq]];
 
     // Expected values.

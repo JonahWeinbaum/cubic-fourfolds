@@ -299,6 +299,10 @@ exceptional fibre for the conic fibration.}
     elif base_dim eq 1 and (B eq 0) then
         correctionTerm := Zero(Prng);
 
+    elif base_dim eq 1 then
+        // Not sure if this case is correct.
+        correctionTerm := Zero(Prng);
+        
     elif base_dim eq 2 and ((A eq 0 and B eq 0) or (B eq 0 and C eq 0)) then
         correctionTerm := - Q^3;
         
@@ -337,7 +341,7 @@ exceptional fibre for the conic fibration.}
     return cppCounts;
 end intrinsic;
 
-intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEnum
+intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
 {Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
 
     // This function is mostly based off of 
@@ -347,7 +351,7 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11, Nonflat:=false) -> SeqEn
 
     // Now compute coefficients for the conic bundle fibration
     // that will be fed into C++ point counting code.
-    g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat:=Nonflat);
+    g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);
         
     A, B, C, D, E, F := Explode(conicCoeffs);
     a, b, c, d := DiscriminantProjectionEquations(conicCoeffs);
