@@ -416,7 +416,10 @@ useful information is produced, but one has to correct the output.}
 
     // Compile.
     retcode := System(compileString);
-    error if retcode ne 0, "Error at compile time step. Exit status: ", retcode;
+    if retcode ne 0 then
+        ChangeDirectory(entryDir);
+        error "Error at compile time step. Exit status: ", retcode;
+    end if;
     
     // Execute.
     cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [1..Maxq]];

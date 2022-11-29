@@ -398,6 +398,26 @@ intrinsic ReportError(index, err)
     return;
 end intrinsic;
 
+intrinsic ReadCSV(fname : DataPath:=DatabaseDirectory()) -> Assoc
+{}
+    io := Open(DataPath * fname, "r");
+
+    data := AssociativeArray();
+    while true do
+        line := Gets(io);
+        if IsEof(line) then break; end if;
+        i, x := eval(line);
+        //zetafunctions[s[1]] := &+[t^i*s[2][i+1] : i in [0..22]];
+        data[i] := x;
+    end while;
+    return data;
+end intrinsic;
+
+intrinsic Index(A::Assoc, x::Any) -> Any
+{}
+    return {k : k in Keys(A) | A[k] eq x};
+end intrinsic;
+
 /////////////////////////////////////////////////
 //
 // C++ interaction.
