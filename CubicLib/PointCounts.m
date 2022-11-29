@@ -361,7 +361,9 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
         return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
     end if;
     
-    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
+    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
+                                           : ExecNum:=ExecNum, Maxq:=Maxq);
+    
     return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;
 
@@ -379,7 +381,8 @@ Primarily, this function is used for testing.}
         return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
     end if;
     
-    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=ExecNum, Maxq:=Maxq);
+    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
+                                           : ExecNum:=ExecNum, Maxq:=Maxq);
 
     return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;

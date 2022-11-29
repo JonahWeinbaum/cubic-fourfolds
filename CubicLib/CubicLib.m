@@ -434,6 +434,7 @@ end intrinsic;
 //
 // find the characteristic polynomial of frobenius on nonprimitive cohomology.
 // input list of point counts over F_2^k, k = 1,..., 11.
+//
 /////////////////////////////////////////////////
 
 CONSTQt_<t> := PolynomialRing(Rationals());
@@ -480,4 +481,124 @@ returns the characteristic polynomial of Frobenius acting on nonprimitive cohomo
     
 end intrinsic;
     
+
+/////////////////////////////////////////////////
+//
+// Weil polynomial manipulations.
+//
+/////////////////////////////////////////////////
+
+// 100 is a sufficient cut-off point to list all cyclotomic polynomials of degree at most 24.
+CONST_cyclo := [f : f in [CyclotomicPolynomial(i) : i in [1..100]] | Degree(f) le 24];
+
+intrinsic TranscendentalFactor(f :: RngUPolElt) -> RngUPolElt
+{Given a Weil polynomial, return the transcendental factor. That is,
+remove all cyclotomic factors from f.}
     
+    if f eq 0 then return 0; end if;
+    q := f;
+    for g in CONST_cyclo do
+        while true do
+            nextq, r := Quotrem(q, g);
+            if r ne 0 then break; end if;
+            q := nextq;
+        end while;
+    end for;
+    return q;
+end intrinsic;
+
+intrinsic IrrationalFactor(f :: RngUPolElt) -> RngUPolElt
+{Given a Weil polynomial remove all factors of 1-T from f.}
+
+    R<t> := Parent(f);
+    if f eq 0 then return 0; end if;
+    q := f;
+    while true do
+        nextq, r := Quotrem(q, 1-t);
+        if r ne 0 then break; end if;
+        q := nextq;
+    end while;
+    return q;    
+end intrinsic;
+
+intrinsic TateTwist(f::RngUPolElt, j::FldRatElt : q:=2) -> RngUPolElt
+{Scale the roots of f by 2^(-j)}
+    require Denominator(j) eq 1 : "Not implmented for non-integral j.";
+    
+    _<t> := Parent(f);
+    return Evaluate(f, q^(-j) * t);
+end intrinsic;
+
+intrinsic TateTwist(f::RngUPolElt, j::RngIntElt : q:=2) -> RngUPolElt
+{Scale the roots of f by 2^(-j)}
+    _<t> := Parent(f);
+    return Evaluate(f, q^(-j) * t);
+end intrinsic;
+
+intrinsic CubicWeilPolynomialToLPolynomial(f::RngUPolElt) -> RngUPolElt
+{Converts the Weil polynomial to the zeta function.}
+    g := TateTwist(f, -2); // Untwist.
+    return Coefficient(g,0) eq -1 select -g else g;
+end intrinsic;
+
+intrinsic CWTL(f) -> Any
+{Alias for CubicWeilPolynomialToLPolynomial.}
+    return CubicWeilPolynomialToLPolynomial(f);
+end intrinsic;
+
+
+intrinsic ArtinTateValue(f::RngUPolElt : Weil:=false) -> FldRatElt
+{Given the L-polynomial of Frobenius acting on H^4(X, QQ_l), return the
+Artin-tate value. If the parameter `Weil:=true`, then f is assumed to
+be a Weil polynomial and is normalized.}
+
+    g := Weil select CubicWeilPolynomialToLPolynomial(f) else f;
+
+    R<t> := Parent(g);
+    
+    // See the paper of Komodo.
+    lvalue := Evaluate(g/(1-4*t)^Valuation(g, 1-4*t), 1/4);
+
+    // This is the special value of the zeta function ** divided by q^chi(X, OX, 2) **
+    return 1/16 * 8/9 * 1/lvalue;
+
+    // The numerator is always 1, which is a good sign for sure.
+
+    // Our guess is off by a factor of 9. Not sure what that's about.
+
+    // H^{3,1} might collapse (by 1) in the supersingular case.
+
+end intrinsic;
+
+
+intrinsic LoadKSDatabase(: Normalize:=true) -> SetEnum
+{}
+    fname := DATABASE_DIRECTORY * "zeta_functions/k3f2-lines.txt";
+    
+    F := Open(fname, "r");
+    kspolys := {};
+    
+    while true do
+        l := Gets(F);
+        if IsEof(l) then break; end if;
+
+        lst := eval(l);
+        if Normalize then
+            Include(~kspolys, Polynomial(Rationals(), lst)/2);
+        else
+            Include(~kspolys, Polynomial(lst));
+        end if;
+    end while;
+
+    return kspolys;
+end intrinsic;
+
+
+intrinsic IsOrdinary(f :: RngUPolElt : Weil:=false) -> Any
+{WARNING: This function is not implemented correctly.}    
+    g := Weil select CubicWeilPolynomialToLPolynomial(f) else f;
+    NP := LowerVertices(NewtonPolygon(g, 2));
+
+    hodgepolygon := [ <0, 0>, <1, 1>, <21, 41>, <22, 44>];
+    return NP eq hodgepolygon;
+end intrinsic;
