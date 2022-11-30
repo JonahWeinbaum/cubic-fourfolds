@@ -412,12 +412,12 @@ intrinsic deserialize(byteseq) -> RngMPolElt
 end intrinsic;
 
 intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false,
-                               OnlySmooth:=false)
+                               OnlySmooth:=false, Verbose:=false)
           -> SeqEnum
 {Loads the precomputed orbit data.}
 
     ZEROCUBIC := [0 : i in [1..56]];
-    print "loading data...";
+    if Verbose then print "loading data..."; end if;
 
     if Quick then
 	range := [1..2];
@@ -426,43 +426,43 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitL
     end if;
     
     orbdata := [];
-    time for k in range do
-	     name2 := Sprintf(ORBIT_DATA_DIRECTORY * "orbitreps-%o.data", k);
-	     seq := [];
-	     o2 := []; 
-	     file := Read(name2);
+    for k in range do
+	name2 := Sprintf(ORBIT_DATA_DIRECTORY * "orbitreps-%o.data", k);
+	seq := [];
+	o2 := []; 
+	file := Read(name2);
 
-	     currloc := 1;
-	     while true do
-		 //Deserialize 7 Bytes and Advance File Pointer   
-		 for i in [1..7] do
-		     byte := StringToCode(file[currloc]);
-		     
-		     seq cat:= [byte];   
-		     
-		     //Break at EOF
-		     if (currloc eq #file) then
-			 break;
-		     end if;
-		     currloc := currloc + 1;
-		 end for;
+	currloc := 1;
+	while true do
+	    //Deserialize 7 Bytes and Advance File Pointer   
+	    for i in [1..7] do
+		byte := StringToCode(file[currloc]);
+		
+		seq cat:= [byte];   
+		
+		//Break at EOF
+		if (currloc eq #file) then
+		    break;
+		end if;
+		currloc := currloc + 1;
+	    end for;
 
-		 //Deserialize
-		 x := deserialize(seq);
-		 if not (RemoveZero and x eq ZEROCUBIC) then
-		     Append(~o2, x);
-		 end if;		 
-		 seq := [];
+	    //Deserialize
+	    x := deserialize(seq);
+	    if not (RemoveZero and x eq ZEROCUBIC) then
+		Append(~o2, x);
+	    end if;		 
+	    seq := [];
 
-		 //Break at EOF
-		 if (currloc eq #file) then
-		     break;
-		 end if;
-	     end while;
+	    //Break at EOF
+	    if (currloc eq #file) then
+		break;
+	    end if;
+	end while;
 
-	     orbdata := orbdata cat [o2];
-	     k;
-	 end for;
+	orbdata := orbdata cat [o2];
+	if Verbose then print k; end if;
+    end for;
 
     if not BitList then
         orbdata := [[BitListToCubic(f) : f in lst] : lst in orbdata];
@@ -599,6 +599,14 @@ function WeilPolynomialFromHalf(coeffs, sign)
     return Polynomial(Reverse(head cat tail)); // I'm not a fan...constant term should be 1.
 end function;
 
+intrinsic BothWeilPolynomials(coeffs) -> Tup
+{}
+    a := WeilPolynomialFromHalf(coeffs,  1);
+    b := WeilPolynomialFromHalf(coeffs, -1);
+    return <a,b>;
+end intrinsic;
+
+
 intrinsic HalfWeil(counts::SeqEnum[RngIntElt]) -> SeqEnum[FldRatElt]
 {}
     // Divide by the zeta function for P4. (Recall there is a Log.)
@@ -716,34 +724,6 @@ returns the characteristic polynomial of Frobenius acting on nonprimitive cohomo
 end intrinsic;
 
 
-intrinsic CacheMap(func, list) -> SeqEnum
-{Basically implement a `map` idiom, via caching.}
-    Cache := AssociativeArray();
-    valset := {x : x in list};
-    
-    for x in valset do
-        Cache[x] := func(x);
-    end for;
-
-    return [Cache[x] : x in list];    
-end intrinsic;
-
-intrinsic CacheFilter(func, list) -> SeqEnum
-{Basically implement a `filter` idiom, via caching.}
-    Cache := AssociativeArray();
-    valset := {x : x in list};
-    
-    for x in valset do
-        Cache[x] := func(x);
-    end for;
-
-    return [x : x in list | Cache[x]];
-end intrinsic;
-
-
-
-
-
 /////////////////////////////////////////////////
 //
 // Weil polynomial manipulations.
@@ -774,6 +754,12 @@ remove all cyclotomic factors from f.}
     end for;
     return q;
 end intrinsic;
+
+intrinsic TranscendentalRank(f :: RngUPolElt) -> RngUPolElt
+{Given a Weil polynomial, return the rank of the transcendental part.}
+    return Degree(TranscendentalFactor(f));
+end intrinsic;
+
 
 intrinsic IrrationalFactor(f :: RngUPolElt) -> RngUPolElt
 {Given a Weil polynomial remove all factors of 1-T from f.}
