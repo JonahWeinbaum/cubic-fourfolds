@@ -249,6 +249,8 @@ end intrinsic;
 //
 /////////////////////////////////////////////////
 
+CONST_Max_Feasible_Orbits := 10^14;
+
 // Count Orbits using Burnside.
 intrinsic CountOrbits(Gmod) -> RngIntElt
 {Counts the orbits of a group acting on a G-module via Burnside's lemma.}
@@ -257,7 +259,124 @@ intrinsic CountOrbits(Gmod) -> RngIntElt
     return &+[#Eigenspace(rho(c[3]),1) * c[2] : c in ConjugacyClasses(G) ]/#G;
 end intrinsic;
 
+intrinsic GLModule(n::RngIntElt, d::RngIntElt, q::RngIntElt) -> ModGrp
+{Returns the module for the action of GL(n+1, q) on spaces of polynomials of degree d.}
+    G := GL(n+1, q);
+    R := PolynomialRing(GF(q), n+1);
+    V := GModule(G, R, d);
+    return V;
+end intrinsic;
 
+intrinsic IsFeasible(n::RngIntElt, d::RngIntElt, q::RngIntElt
+                     : Ncores := 100,
+                       TimeLimit := 525600 * 60) -> BoolElt
+{A Heuristic to determines whether orbit enumeration is feasible for forms
+of degree d in P^n over Fq. Our heuristic is based on current techniques 
+based on reasonable hardware from 2022.
+
+NOTE: Sometimes this function will produce a false negative, because it 
+doesn't find the optimal composition series.
+}
+    G := GL(n+1, q);
+    R := PolynomialRing(GF(q), n+1);
+    V := GModule(G, R, d);    
+    return IsFeasible(V : Ncores:=Ncores, TimeLimit:=TimeLimit);
+end intrinsic;
+
+intrinsic IsFeasible(V::ModGrp
+                     : Ncores := 100,
+                       TimeLimit := 525600 * 60) -> BoolElt
+{}
+    if CountOrbits(V) gt CONST_Max_Feasible_Orbits then
+        return false;
+    end if;
+    
+    // This can take a while for really big modules. The answer is probably no
+    // in this case anyways.
+    found_series := CandidateCompositionSeries(V);
+    return &or [IsFeasibleUnionFind(V) : V in {comp[1] : comp in found_series}];
+end intrinsic;
+
+intrinsic CandidateCompositionSeries(V::ModGrp) -> SeqEnum
+{}
+    // Look for 10 composition series.
+    found_series := [];
+    found_dims := [];
+    
+    wait_count := 0;    
+    while wait_count lt 10 do
+        comp := CompositionSeries(V);
+        dims := [Dimension(W) : W in comp];
+        
+        if not dims in found_dims then
+            Append(~found_dims, dims);
+            Append(~found_series, comp);
+            wait_count := 0;
+        else
+            wait_count +:= 1;
+        end if;
+    end while;
+
+    return found_series;
+end intrinsic;
+
+intrinsic IsFeasibleUnionFind(n::RngIntElt, d::RngIntElt, q::RngIntElt
+                              : Ncores := 100,
+                                TimeLimit := 525600 * 60) -> BoolElt
+{A Heuristic to determines whether orbit enumeration is feasible for forms
+of degree d in P^n over Fq. Our heuristic is based on using union-find 
+based on reasonable hardware from 2022.}
+
+    if n gt 2 and d gt 10 then
+        return false;
+    end if;
+
+    G := GL(n+1, q);
+    R := PolynomialRing(GF(q), n+1);    
+    V := GModule(G, R, d);
+
+    return IsFeasibleUnionFind(V : Ncores:=Ncores, TimeLimit:=TimeLimit);
+end intrinsic;
+
+intrinsic IsFeasibleUnionFind(V::ModGrp
+                              : Ncores := 100,
+                                TimeLimit := 525600 * 60) -> BoolElt
+{}
+    // Note the number of seconds in a year is 525600 * 60.
+
+    if CountOrbits(V) gt CONST_Max_Feasible_Orbits then
+        return false;
+    end if;
+    
+    // If the dimension is larger than 60, the answer is no.
+    if Dimension(V) gt 60 then return false; end if;
+    
+    // We use the complexity estimate that union find is O(N).
+    // The group PGL_{n+1} can be assumed to act (generically) freely, since
+    // cubics with larger stabilizers are generally sparse within the family.
+    
+    // Time matrix-vector multiplication.
+    G := Group(V);
+    gens := Generators(G);
+    ntrials := 10^4;
+    
+    t1 := Cputime();
+    for i in [1..ntrials] do
+        v := Random(V);
+        g := Random(gens);
+        gv := v * g;
+    end for;
+    t2 := Cputime();
+    avg_step_time := (t2-t1)/ntrials;
+
+    // We now compare to hardware availability. We assume that time complexity
+    // is the main contraint.
+    q := #BaseRing(V);
+    N := ExactQuotient(#V-1, q-1);
+
+    return N * avg_step_time / Ncores lt TimeLimit;
+end intrinsic;
+                                          
 /////////////////////////////////////////////////
 //
 // Data Processing
@@ -292,7 +411,8 @@ intrinsic deserialize(byteseq) -> RngMPolElt
     return seq;
 end intrinsic;
 
-intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false)
+intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false,
+                               OnlySmooth:=false)
           -> SeqEnum
 {Loads the precomputed orbit data.}
 
@@ -346,8 +466,16 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitL
 
     if not BitList then
         orbdata := [[BitListToCubic(f) : f in lst] : lst in orbdata];
+
+        if OnlySmooth then
+            orbdata := [[f : f in lst | IsSmooth(f)] : lst in orbdata];
+        end if;
+    else
+        if OnlySmooth then
+            orbdata := [[b : b in lst | IsSmooth(BitListToCubic(b))] : lst in orbdata];
+        end if;
     end if;
-    
+
     if Flat then
 	return &cat orbdata;
     else
@@ -401,14 +529,19 @@ end intrinsic;
 intrinsic ReadCSV(fname : DataPath:=DatabaseDirectory()) -> Assoc
 {}
     io := Open(DataPath * fname, "r");
-
     data := AssociativeArray();
     while true do
         line := Gets(io);
         if IsEof(line) then break; end if;
-        i, x := eval(line);
-        //zetafunctions[s[1]] := &+[t^i*s[2][i+1] : i in [0..22]];
-        data[i] := x;
+        args := eval("[* " * line * " *]");
+        i := args[1];
+        if #args eq 1 then
+            data[i] := true; // Just mark the key.
+        elif #args eq 2 then
+            data[i] := args[2];
+        else
+            data[i] := args[2..#args];
+        end if;
     end while;
     return data;
 end intrinsic;
@@ -460,47 +593,156 @@ end intrinsic;
 CONSTQt_<t> := PolynomialRing(Rationals());
 CONSTCs_<s> := PolynomialRing(ComplexField(30));
 
-intrinsic Charpoly(list::SeqEnum[RngIntElt]) -> RngUPolElt, RngIntElt, MonStgElt
-{input list of point counts over F_2^k, k = 1,..., 11, 
-returns the characteristic polynomial of Frobenius acting on nonprimitive cohomology.}
+function WeilPolynomialFromHalf(coeffs, sign)
+    head := coeffs[0+1..11+1];
+    tail := [sign*x : x in Reverse(coeffs[0+1..10+1])];
+    return Polynomial(Reverse(head cat tail)); // I'm not a fan...constant term should be 1.
+end function;
 
-    tr := [(list[m] - 1 - 2^m - 4^m - 8^m - 16^m)/4^m : m in [1..11]];
-    c := [];
+intrinsic HalfWeil(counts::SeqEnum[RngIntElt]) -> SeqEnum[FldRatElt]
+{}
+    // Divide by the zeta function for P4. (Recall there is a Log.)
+    // Also, dividing by 4^m amounts to taking a Tate twist (evaluating t => t/4).
+    tr := [(counts[m] - 1 - 2^m - 4^m - 8^m - 16^m)/4^m : m in [1..11]];
+
+    // Apply the exponential map. Note that c[i] is the i-th coefficient.
+    c := [Rationals() ! -2^31 : i in [1..11]]; // Initialize
     c[1] := -tr[1];
     for k in [2..11] do
-        c[k] := (tr[k] + &+[c[i]*tr[k-i] : i in [1..k-1]] )/(-k);
+        c[k] := (tr[k] + &+[c[i]*tr[k-i] : i in [1..k-1]])/(-k);
     end for;
+
+    // Append the initial 1. (Note: this might be a sign different than the old code.)
+    return [1] cat c;
+end intrinsic;
+
+intrinsic IsSignAmbiguous(halfWeil) -> BoolElt, RngIntElt
+{Determine if there is an ambiguity in the functional equation. Also return the
+"Badness" rating -- the largest integer such that the 11+ith coefficient is zero.}
+
+    if halfWeil[12] ne 0 then return false, -1; end if;
     
-    p := t^22 + &+[c[i]*t^(22-i) : i in [1..11] ];
-    g := CONSTQt_ ! (t^22 * Evaluate(p, 1/t));
-    
-    if c[11] ne 0 then
-        ret := p + Modexp(g, 1, t^11);
-        return ret, 1;
+    // Try both signs. See if only one works.
+    poly1 := WeilPolynomialFromHalf(halfWeil,  1);
+    poly2 := WeilPolynomialFromHalf(halfWeil, -1);
+
+    isWeil1 := HasAllRootsOnUnitCircle(poly1);
+    isWeil2 := HasAllRootsOnUnitCircle(poly2);
+
+    if isWeil1 and isWeil2 then
+        badness := 0;
+        while true do
+            if halfWeil[12-badness] ne 0 then break; end if;
+            badness +:=1;
+        end while;
+        return true, badness-1;
     else
-        C := ComplexField(30);
-        poly1 := p + Modexp(g, 1, t^11);
-        roots1 := Roots(Evaluate(poly1, s));
-        mods1 := [Modulus(roots1[i][1]) : i in [1..#roots1]];
+        return false, -1;
+    end if;
+end intrinsic;
+
+intrinsic Badness(halfWeil) -> RngIntElt
+{}
+    a, b := IsSignAmbiguous(halfWeil);
+    return b;
+end intrinsic;
+
+intrinsic DoesArtinTateHelp(halfWeil) -> BoolElt
+{Check if the value at -1 is a square or twice a square.}
+    atv := Integers() ! (2*Evaluate(Polynomial(halfWeil), -1));
+    return not (IsSquare(atv) or IsSquare(2*atv));
+end intrinsic;
+
+intrinsic Charpoly(list::SeqEnum[RngIntElt] : FailIfAmbiguous:=true) -> RngUPolElt
+{input list of point counts over F_2^k, k = 1,..., 11, 
+returns the characteristic polynomial of Frobenius acting on nonprimitive cohomology.}
+    
+    // p := t^22 + &+[c[i]*t^(22-i) : i in [1..11] ];
+    // g := CONSTQt_ ! (t^22 * Evaluate(p, 1/t));
+
+    c := HalfWeil(list);
+    
+    if c[11+1] ne 0 then
+        return WeilPolynomialFromHalf(c, 1);
+    end if;
+
+
+    // Try both signs. See if only one works.
+    poly1 := WeilPolynomialFromHalf(c,  1);
+    poly2 := WeilPolynomialFromHalf(c, -1);
+
+    isWeil1 := HasAllRootsOnUnitCircle(poly1);
+    isWeil2 := HasAllRootsOnUnitCircle(poly2);
+    
+    if isWeil1 and not isWeil2 then
+        return poly1;
+    elif isWeil2 and not isWeil1 then
+        return poly2;
+
+    elif isWeil1 and isWeil2 then
+
+        // TODO: We should have a file keeping track of the higher point counts,
+        // for the cubics that need them.
         
-        if &and [Abs(mods1[i] - 1) lt 1E-30 : i in [1..#mods1] ] then
-            return poly1, 1, "middle coeff zero";
+        // Note: should include an optimization regarding which point
+        // count to request.
+
+        if FailIfAmbiguous then
+            error "Ambiguous sign of functional equation. Cannot determine zeta functions.";
         else
-            poly2 := p - Modexp(g, 1, t^11);
-            roots2 := Roots(Evaluate(poly2, s));
-            mods2 := [Modulus(roots2[i][1]) : i in [1..#roots2]];
-            
-            if &and [Abs(mods2[i] - 1) lt 1E-30 : i in [1..#mods2] ] then
-                return poly2, -1, "middle coeff zero";
-            else
-                error "Something went wrong in zeta function computation.";
-            end if;
+            return -1; // Obviously wrong.
         end if;
 
-    end if;
-    
+
+        error "Not implemented.";
+        
+        // TODO: The indexing is wrong
+        /*
+          p12  := PointCounts(cubic, 12);
+          tr12 := (p12 - 1 - 2^12 - 4^12 - 8^12 - 16^12)/4^12;
+          c12  := (tr12 + &+[c[i]*tr[12-i] : i in [1..12-1]])/(-12);
+
+        if Coefficient(poly1, 12) eq c12 and c12 ne 0 then 
+        return poly1; 
+        elif Coefficient(poly2, 12) eq c12 and c12 ne 0 then 
+        return poly2;
+        else
+        error "counting up to 2^12 does not cut it";
+        end if;
+       */
+    else
+        error "No valid sign choice for given point counts.";
+    end if;    
 end intrinsic;
+
+
+intrinsic CacheMap(func, list) -> SeqEnum
+{Basically implement a `map` idiom, via caching.}
+    Cache := AssociativeArray();
+    valset := {x : x in list};
     
+    for x in valset do
+        Cache[x] := func(x);
+    end for;
+
+    return [Cache[x] : x in list];    
+end intrinsic;
+
+intrinsic CacheFilter(func, list) -> SeqEnum
+{Basically implement a `filter` idiom, via caching.}
+    Cache := AssociativeArray();
+    valset := {x : x in list};
+    
+    for x in valset do
+        Cache[x] := func(x);
+    end for;
+
+    return [x : x in list | Cache[x]];
+end intrinsic;
+
+
+
+
 
 /////////////////////////////////////////////////
 //
@@ -510,6 +752,12 @@ end intrinsic;
 
 // 100 is a sufficient cut-off point to list all cyclotomic polynomials of degree at most 24.
 CONST_cyclo := [f : f in [CyclotomicPolynomial(i) : i in [1..100]] | Degree(f) le 24];
+
+intrinsic IsWeilPolynomial(f::RngUPolElt : Proof:=false) -> BoolElt
+{Checks if `f` is a Weil polynomial.}
+    return HasAllRootsOnUnitCircle(f);
+end intrinsic;
+    
 
 intrinsic TranscendentalFactor(f :: RngUPolElt) -> RngUPolElt
 {Given a Weil polynomial, return the transcendental factor. That is,

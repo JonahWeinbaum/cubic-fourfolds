@@ -342,7 +342,7 @@ exceptional fibre for the conic fibration.}
 end intrinsic;
 
 
-intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
+intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11) -> SeqEnum
 {Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
 
     // This function is mostly based off of 
@@ -362,9 +362,16 @@ intrinsic PointCounts(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
     end if;
     
     cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
-                                           : ExecNum:=ExecNum, Maxq:=Maxq);
+                                           : ExecNum:=ExecNum, Minq:=Minq, Maxq:=Maxq);
     
     return CppCountCorrection(cppCounts, conicCoeffs);
+end intrinsic;
+
+intrinsic PointCounts(cubic, m) -> RngIntElt
+{Compute the point counts on the given smooth cubic over F_(2^m). }
+
+return PointCounts(cubic : Minq:=12, Maxq:=12);
+
 end intrinsic;
 
 intrinsic PointCountsNoTransform(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
@@ -387,7 +394,7 @@ Primarily, this function is used for testing.}
     return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;
 
-intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=false, Maxq:=11) -> SeqEnum
+intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=false, Minq:= 1, Maxq:=11) -> SeqEnum
 {Call the C++ point counting engine. The output of this function is the correct point counts
 *assuming* that the line defining the conic fibration lies in the smooth locus. Otherwise,
 useful information is produced, but one has to correct the output.}
@@ -422,7 +429,7 @@ useful information is produced, but one has to correct the output.}
     end if;
     
     // Execute.
-    cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [1..Maxq]];
+    cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [Minq..Maxq]];
 
     try
 	point_counts := [StringToInteger(out) : out in cppOutputs];
