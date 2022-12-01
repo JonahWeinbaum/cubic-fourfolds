@@ -160,36 +160,16 @@ intrinsic IsSmooth(f :: RngMPolElt) -> BoolElt
 end intrinsic;
 
 
-function ConjugatingMatrix(grp, X, Y)
-    // This code determines whether 2 cubics f1, f2 are in the same PGL6-orbit, and if they are,
-    // gives a matrix such that f1^g = f2.
-
-    // Magma annoyingly will not compute conjugating matrix, instead we have to recast
-    // everything as a permuation group using the OrbitAction intrinsic
-    
-    map, permgp, matgp := OrbitAction(grp, {X,Y});
-
-    bool, g := IsConjugate(permgp, map(X), map(Y));
-    
-    if not IsConjugate(permgp, map(X), map(Y)) then
-        return false, "not conjugate";
-    end if;
-
-    return bool, g @@ map;
-end function;
-
 intrinsic IsConjugate(G::GrpMat, v::ModGrpElt, w::ModGrpElt) -> BoolElt, GrpMatElt
 {Checks if G sends v to w, and if so, returns a matrix which does so.}
 
-    assert G cmpeq ActionGroup(Parent(v));
-    
     mp, permgp, matgp := OrbitAction(G, {v,w});
     bool, g := IsConjugate(permgp, mp(v), mp(w));
 
     if bool then
         return bool, g @@ mp;
     else
-        return false;
+      return false, _;
     end if;
 end intrinsic;
 
