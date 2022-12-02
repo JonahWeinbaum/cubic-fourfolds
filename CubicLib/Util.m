@@ -66,22 +66,52 @@ intrinsic CacheFilter(func, A) -> Any
 end intrinsic;
 
 
-intrinsic InverseAssociativeArray(A::Assoc) -> Assoc
+intrinsic InverseAssociativeArray(A::Assoc : UniqueKeys:=false) -> Assoc
 {Given an associative array, return the associative array with the keys and values reversed.
 (Keys are placed in a set.)}
 
     B := AssociativeArray();
-    for k in Keys(A) do
-        v := A[k];
-        if v in Keys(B) then
-            S := B[v];
-            Include(~S, v);
-            B[v] := S;
-        else
-            B[v] := {k};
-        end if;
-    end for;
+
+    if UniqueKeys then
+        for k in Keys(A) do
+            B[A[k]] := k;
+        end for;
+    else
+        for k in Keys(A) do
+            v := A[k];
+            if v in Keys(B) then
+                S := B[v];
+                Include(~S, k);
+                B[v] := S;
+            else
+                B[v] := {k};
+            end if;
+        end for;
+    end if;
     
     return B;
 end intrinsic;
 
+intrinsic Compose(A::Assoc, B::Assoc : IgnoreMissingKeys:=false) -> Assoc
+{Return the associative array with C[k] eq B[A[k]], where k in Keys(A).}
+    C := AssociativeArray();
+    for k in Keys(A) do
+        try
+            C[k] := B[A[k]];
+        catch e
+            if not IgnoreMissingKeys then
+                error e;
+            end if;
+        end try;
+    end for;
+    return C; 
+end intrinsic;
+
+intrinsic SequenceAsDictionary(L::SeqEnum) -> Assoc
+{Turn a sequence L into the associated array A such that A[i] = L[i].}
+    A := AssociativeArray();
+    for i in [1..#L] do
+        A[i] := L[i];
+    end for;
+    return A;    
+end intrinsic;

@@ -370,7 +370,7 @@ end intrinsic;
 intrinsic PointCounts(cubic, m) -> RngIntElt
 {Compute the point counts on the given smooth cubic over F_(2^m). }
 
-return PointCounts(cubic : Minq:=12, Maxq:=12);
+return PointCounts(cubic : Minq:=m, Maxq:=m);
 
 end intrinsic;
 
