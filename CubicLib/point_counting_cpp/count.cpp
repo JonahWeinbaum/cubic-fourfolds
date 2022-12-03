@@ -91,8 +91,8 @@ int main(int argc, char **argv) {
   mult = read_table(q, q, "mult_" + qq);
   divi = read_table(q, q, "divi_" + qq);
   
-  quadratic_roots = read_table(2, q, q, "quadratic_roots_" + qq);  
-  depressed_cubic_roots = read_table(3, q, q, "depressed_cubic_roots_" + qq);  
+  quadratic_roots = read_table(q, q, 2, "quadratic_roots_" + qq);  
+  depressed_cubic_roots = read_table(q, q, 3, "depressed_cubic_roots_" + qq);  
 
     
   #else

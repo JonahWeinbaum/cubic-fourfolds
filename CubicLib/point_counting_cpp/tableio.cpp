@@ -131,7 +131,7 @@ unsigned*** read_table(int size1, int size2, int size3, std::string fname){
   // Extract data from file.
   std::ifstream file;
   int N = size1 * size2 * size3;
-  unsigned* blah = read_table(N, fname);
+  unsigned* table_as_array = read_table(N, fname);
   file.close();
   
   // Set up the pointer table.
@@ -140,7 +140,7 @@ unsigned*** read_table(int size1, int size2, int size3, std::string fname){
   for (unsigned i = 0; i < size1; i++) {
     table[i] = new unsigned*[size2];
     for (unsigned j = 0; j < size2; j++) {
-      table[i][j] = (unsigned *)(blah + M); // This changes when reversing indexing.
+      table[i][j] = (unsigned *)(table_as_array + M);
       M += size3;
     }
   }
