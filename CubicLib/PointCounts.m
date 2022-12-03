@@ -403,7 +403,7 @@ useful information is produced, but one has to correct the output.}
     if ExecNum cmpeq false then
 	execFile := "a.out";
         headerFile := "coeffs.h";
-        compileString := Sprintf("g++ -DWITHCACHE tableio.cpp count.cpp -o %o", execFile);
+        compileString := Sprintf("g++ -O3 -DWITHCACHE tableio.cpp count.cpp -o %o", execFile);
     else
 	execFile := Sprintf("a.%o.out", ExecNum);
         headerFile := Sprintf("coeffs%o.h", ExecNum);

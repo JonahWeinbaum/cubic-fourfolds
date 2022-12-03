@@ -14,4 +14,5 @@ int test_1_table(unsigned* table, int size1);
 int test_2_table(unsigned** table, int size1, int size2);
 int test_3_table(unsigned*** table, int size1, int size2, int size3);
 
+int compare_2_table(unsigned** table1, unsigned** table2, int size1, int size2);
 int compare_3_table(unsigned*** table1, unsigned*** table2, int size1, int size2, int size3);

@@ -140,7 +140,7 @@ unsigned*** read_table(int size1, int size2, int size3, std::string fname){
   for (unsigned i = 0; i < size1; i++) {
     table[i] = new unsigned*[size2];
     for (unsigned j = 0; j < size2; j++) {
-      table[i][j] = (unsigned *)(blah + M);
+      table[i][j] = (unsigned *)(blah + M); // This changes when reversing indexing.
       M += size3;
     }
   }
@@ -228,6 +228,16 @@ int compare_3_table(unsigned*** table1, unsigned*** table2, int size1, int size2
       for (int k = 0; k < size3; k++)
 	if (table1[i][j][k] != table2[i][j][k])
 	  std::cerr << i << " " << j << " " << k << " " << table1[i][j][k] << " " << table2[i][j][k] << std::endl;
+
+  return 0;
+}
+
+int compare_2_table(unsigned** table1, unsigned** table2, int size1, int size2) {
+
+  for (int i = 0; i < size1; i++)
+    for (int j = 0; j < size2; j++)
+      if (table1[i][j] != table2[i][j])
+        std::cerr << i << " " << j << " " << table1[i][j] << " " << table2[i][j] << std::endl;
 
   return 0;
 }

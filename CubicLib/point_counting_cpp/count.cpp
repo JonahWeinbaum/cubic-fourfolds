@@ -76,8 +76,13 @@ int main(int argc, char **argv) {
   // Polynomial set.
   unsigned p = polynomials[n];
   
-
-  #ifdef WITHCACHE 
+  // TODO: XXX: Need to regenerate the tables with the flipped indices.
+  #ifdef WITHCACHE
+  #ifdef COMPARE
+  const char incompatible_compile_flags[] = "ERROR: Incompatible compile flags.\n";
+  printf(incompatible_compile_flags);
+  return 1;
+  #endif
   // Loading of LOCAL variables
   int* orbit_size = read_table(q, "orbit_size_" + qq, 0);
   unsigned* orbit_rep = read_table(q, "orbit_rep_" + qq);
@@ -116,19 +121,20 @@ int main(int argc, char **argv) {
 	if (a & q) a ^= p;
       }
 
-      mult[i][j] = mult[j][i] = ij;
+      mult[i][j] = ij;
+      mult[j][i] = ij;
       divi[ij][i] = j;
       divi[ij][j] = i;
     }
   
   // lookup table for roots of quadratics
   // allocate and initialize
-  quadratic_roots = new unsigned**[2];
-  for (int i = 0; i < 2; i++) {
+  quadratic_roots = new unsigned**[q];
+  for (int i = 0; i < q; i++) {
     quadratic_roots[i] = new unsigned*[q];
     for (int j = 0; j < q; j++) {
-      quadratic_roots[i][j] = new unsigned[q];
-      for (int k = 0; k < q; k++)
+      quadratic_roots[i][j] = new unsigned[2];
+      for (int k = 0; k < 2; k++)
         quadratic_roots[i][j][k] = NULL_Fq_elt;
     }
   }
@@ -138,20 +144,20 @@ int main(int argc, char **argv) {
     for (int j = i; j < q; j++) {
       // x^2 + ax + b = (x+i)(x+j)
       unsigned a = i ^ j, b = mult[i][j];
-      quadratic_roots[0][a][b] = i;
+      quadratic_roots[a][b][0] = i;
       if (j > i)
-        quadratic_roots[1][a][b] = j;
+        quadratic_roots[a][b][1] = j;
     }
 
   
   // lookup table for roots of depressed cubics
   // allocate and initialize
-  depressed_cubic_roots = new unsigned**[3];
-  for (int i = 0; i < 3; i++) {
+  depressed_cubic_roots = new unsigned**[q];
+  for (int i = 0; i < q; i++) {
     depressed_cubic_roots[i] = new unsigned*[q];
     for (int j = 0; j < q; j++) {
-      depressed_cubic_roots[i][j] = new unsigned[q];
-      for (int k = 0; k < q; k++)
+      depressed_cubic_roots[i][j] = new unsigned[3];
+      for (int k = 0; k < 3; k++)
         depressed_cubic_roots[i][j][k] = NULL_Fq_elt;
     }
   }
@@ -163,16 +169,16 @@ int main(int argc, char **argv) {
       unsigned s = mult[a][a] ^ b, t = mult[a][b];
 
       if (a == 0 && b == 0) { // We are looking at the depressed cubic x^3.
-        depressed_cubic_roots[0][s][t] = 0;
+        depressed_cubic_roots[s][t][0] = 0;
         
       } else if (b == 0) { // if a is already a root of x^2 + ax + b
-        depressed_cubic_roots[0][s][t] = quadratic_roots[0][a][b];
-        depressed_cubic_roots[1][s][t] = quadratic_roots[1][a][b];
+        depressed_cubic_roots[s][t][0] = quadratic_roots[a][b][0];
+        depressed_cubic_roots[s][t][1] = quadratic_roots[a][b][1];
         
       } else {
-        depressed_cubic_roots[0][s][t] = a;
-        depressed_cubic_roots[1][s][t] = quadratic_roots[0][a][b];
-        depressed_cubic_roots[2][s][t] = quadratic_roots[1][a][b];
+        depressed_cubic_roots[s][t][0] = a;
+        depressed_cubic_roots[s][t][1] = quadratic_roots[a][b][0];
+        depressed_cubic_roots[s][t][2] = quadratic_roots[a][b][1];
       }
     }
   
@@ -187,21 +193,6 @@ int main(int argc, char **argv) {
 
   
   // fill the tables
-  // for (unsigned i = 0; i < q; i++) {
-  //   if (orbit_rep[i] != NULL_Fq_elt) continue;
-    
-  //   unsigned j = i;
-  //   int size = 1;
-  //   while (true) {
-  //     orbit_rep[j] = i;
-  //     j = mult[j][j];   // Apply Frobenius x->x^2.
-  //     if (j == i) {
-  //       orbit_size[i] = size;
-  //       break;
-  //     }
-  //     size++;
-  //   } 
-  // }
 
   for (unsigned i = 0; i < q; i++) {
     if (orbit_rep[i] != NULL_Fq_elt) continue;
@@ -226,11 +217,14 @@ int main(int argc, char **argv) {
   #endif
 
   #ifdef COMPARE
-  unsigned*** X = read_table(2, q, q, "quadratic_roots_" + qq);  
-  unsigned*** Y = read_table(3, q, q, "depressed_cubic_roots_" + qq);  
-
-  compare_3_table(X, quadratic_roots, 2, q, q);
-  compare_3_table(Y, depressed_cubic_roots, 3, q, q);
+  unsigned*** X = read_table(q, q, 2, "quadratic_roots_" + qq);  
+  unsigned*** Y = read_table(q, q, 3, "depressed_cubic_roots_" + qq);  
+  unsigned** mul1 = read_table(q, q, "mult_" + qq);
+  
+  compare_2_table(mul1, mult, q, q);
+  
+  compare_3_table(X, quadratic_roots, q, q, 2);
+  compare_3_table(Y, depressed_cubic_roots, q, q, 3);
   #endif
   
   // cputime = std::clock() - cputime;
@@ -314,7 +308,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
     unsigned s = mult[b][b] ^ c, t = mult[b][c] ^ d;
     
     for (int i = 0; i < 3; i++) {
-      unsigned r = depressed_cubic_roots[i][s][t];
+      unsigned r = depressed_cubic_roots[s][t][i];
       if (r == NULL_Fq_elt) break;
       ret += contribution_at_P3_point(y_0, y_1, y_2, r ^ b);
     }
@@ -329,7 +323,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
     c = divi[c][b]; d = divi[d][b];
     
     for (int i = 0; i < 2; i++) {
-      unsigned y_3 = quadratic_roots[i][c][d];
+      unsigned y_3 = quadratic_roots[c][d][i];
       if (y_3 == NULL_Fq_elt) break;
       ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
     }
@@ -360,7 +354,7 @@ bool Arf_invariant(unsigned X, unsigned Y, unsigned Z) {
   unsigned XY = mult[X][Y];
   unsigned ZZ = mult[Z][Z];
   unsigned XYdivZZ = divi[XY][ZZ];
-  return quadratic_roots[0][1][XYdivZZ] == NULL_Fq_elt;
+  return quadratic_roots[1][XYdivZZ][0] == NULL_Fq_elt;
 }
 
 int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {

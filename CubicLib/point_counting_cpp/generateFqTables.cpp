@@ -82,19 +82,20 @@ int generate_tables(int n) {
 	if (a & q) a ^= p;
       }
 
-      mult[i][j] = mult[j][i] = ij;
+      mult[i][j] = ij;
+      mult[j][i] = ij;
       divi[ij][i] = j;
       divi[ij][j] = i;
     }
   
   // lookup table for roots of quadratics
   // allocate and initialize
-  quadratic_roots = new unsigned**[2];
-  for (int i = 0; i < 2; i++) {
+  quadratic_roots = new unsigned**[q];
+  for (int i = 0; i < q; i++) {
     quadratic_roots[i] = new unsigned*[q];
     for (int j = 0; j < q; j++) {
-      quadratic_roots[i][j] = new unsigned[q];
-      for (int k = 0; k < q; k++)
+      quadratic_roots[i][j] = new unsigned[2];
+      for (int k = 0; k < 2; k++)
         quadratic_roots[i][j][k] = q;
     }
   }
@@ -103,19 +104,19 @@ int generate_tables(int n) {
     for (int j = i; j < q; j++) {
       // x^2 + ax + b = (x+i)(x+j)
       unsigned a = i ^ j, b = mult[i][j];
-      quadratic_roots[0][a][b] = i;
+      quadratic_roots[a][b][0] = i;
       if (j > i)
-        quadratic_roots[1][a][b] = j;
+        quadratic_roots[a][b][1] = j;
     }
 
   // lookup table for roots of depressed cubics
   // allocate and initialize
-  depressed_cubic_roots = new unsigned**[3];
-  for (int i = 0; i < 3; i++) {
+  depressed_cubic_roots = new unsigned**[q];
+  for (int i = 0; i < q; i++) {
     depressed_cubic_roots[i] = new unsigned*[q];
     for (int j = 0; j < q; j++) {
-      depressed_cubic_roots[i][j] = new unsigned[q];
-      for (int k = 0; k < q; k++)
+      depressed_cubic_roots[i][j] = new unsigned[3];
+      for (int k = 0; k < 3; k++)
         depressed_cubic_roots[i][j][k] = q;
     }
   }
@@ -125,12 +126,12 @@ int generate_tables(int n) {
       // (x^2 + ax + b)(x+a) = x^3 + sx + t
       unsigned s = mult[a][a] ^ b, t = mult[a][b];
       if (b == 0) { // if a is already a root of x^2 + ax + b
-        depressed_cubic_roots[0][s][t] = quadratic_roots[0][a][b];
-        depressed_cubic_roots[1][s][t] = quadratic_roots[1][a][b];
+        depressed_cubic_roots[s][t][0] = quadratic_roots[a][b][0];
+        depressed_cubic_roots[s][t][1] = quadratic_roots[a][b][1];
       } else {
-        depressed_cubic_roots[0][s][t] = a;
-        depressed_cubic_roots[1][s][t] = quadratic_roots[0][a][b];
-        depressed_cubic_roots[2][s][t] = quadratic_roots[1][a][b];
+        depressed_cubic_roots[s][t][0] = a;
+        depressed_cubic_roots[s][t][1] = quadratic_roots[a][b][0];
+        depressed_cubic_roots[s][t][2] = quadratic_roots[a][b][1];
       }
     }
 
@@ -164,8 +165,8 @@ int generate_tables(int n) {
   // Write data to file.
   std::string qq = std::to_string(q);
     
-  write_table(depressed_cubic_roots, 3, q, q, "depressed_cubic_roots_" + qq);
-  write_table(quadratic_roots, 2, q, q, "quadratic_roots_" + qq);
+  write_table(depressed_cubic_roots, q, q, 3, "depressed_cubic_roots_" + qq);
+  write_table(quadratic_roots, q, q, 2, "quadratic_roots_" + qq);
 
   write_table(mult, q, q, "mult_" + qq);
   write_table(divi, q, q, "divi_" + qq);
@@ -173,6 +174,12 @@ int generate_tables(int n) {
   write_table(orbit_rep, q, "orbit_rep_" + qq);
   write_table(orbit_size, q, "orbit_size_" + qq);
 
+  if (n==2) {
+    compare_2_table(mult, read_table(q, q, "mult_4"), q, q);
+    compare_3_table(quadratic_roots, read_table(q, q, 2, "quadratic_roots_4"),
+                    q, q, 2);
+  }
+  
   return 0;
 }
 
