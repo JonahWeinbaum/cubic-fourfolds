@@ -342,7 +342,10 @@ exceptional fibre for the conic fibration.}
 end intrinsic;
 
 
-intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11) -> SeqEnum
+intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11,
+                              CompilerOptimization:=false,
+                              UseCache:=true,
+                              PrintTimes:=false) -> SeqEnum
 {Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
 
     // This function is mostly based off of 
@@ -362,7 +365,10 @@ intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11) -> SeqEnum
     end if;
     
     cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
-                                           : ExecNum:=ExecNum, Minq:=Minq, Maxq:=Maxq);
+                                           : ExecNum:=ExecNum, Minq:=Minq, Maxq:=Maxq,
+                                             CompilerOptimization:=CompilerOptimization,
+                                             UseCache:=UseCache,
+                                             PrintTimes:=PrintTimes);
     
     return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;
@@ -394,27 +400,54 @@ Primarily, this function is used for testing.}
     return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;
 
-intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs : ExecNum:=false, Minq:= 1, Maxq:=11) -> SeqEnum
-{Call the C++ point counting engine. The output of this function is the correct point counts
-*assuming* that the line defining the conic fibration lies in the smooth locus. Otherwise,
-useful information is produced, but one has to correct the output.}
+intrinsic PointCountingSystemStrings(: ExecNum:=false,
+                                       CompilerOptimization:=false,
+                                       UseCache:=true) -> MonStgElt, MonStgElt
+{Format the compilation string, header file name, and the executable file name for calling g++.}
+
+    compileString := "g++";
+
+    if CompilerOptimization then
+        compileString *:= " -O3";
+    end if;
+
+    if UseCache then
+        compileString *:= " -DWITHCACHE";
+    end if;
     
     // Option to ensure parallel code doesn't fight over executable file.
     if ExecNum cmpeq false then
 	execFile := "a.out";
-        headerFile := "coeffs.h";
-        compileString := Sprintf("g++ -O3 -DWITHCACHE tableio.cpp count.cpp -o %o", execFile);
+        headerFile := "coeffs.h";        
     else
 	execFile := Sprintf("a.%o.out", ExecNum);
         headerFile := Sprintf("coeffs%o.h", ExecNum);
-
-        optionsString := Sprintf("g++ -DWITHCACHE -DCOEFFSFILE='\"%o\"'", headerFile);
-        argsString := Sprintf("tableio.cpp count.cpp -o %o", execFile);
-        
-        compileString := optionsString * " " * argsString;
+        compileString *:= Sprintf(" -DCOEFFSFILE='\"%o\"'", headerFile);
     end if;
 
-    // Change to C++ directory
+    compileString *:= " -o " * execFile;
+
+    // Finish compile string
+    compileString *:= " tableio.cpp count.cpp";
+    
+    return compileString, headerFile, execFile;
+end intrinsic;
+
+intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs
+                                    : ExecNum:=false, Minq:= 1, Maxq:=11,
+                                      CompilerOptimization:=false, UseCache:=true,
+                                      PrintTimes:=false) -> SeqEnum
+{Call the C++ point counting engine. The output of this function is the correct point counts
+*assuming* that the line defining the conic fibration lies in the smooth locus. Otherwise,
+useful information is produced, but one has to correct the output.}
+
+    // Create relevant strings.
+    compileString, headerFile, execFile :=
+        PointCountingSystemStrings( : ExecNum:=ExecNum,
+                                      CompilerOptimization:=CompilerOptimization,
+                                      UseCache:=UseCache);
+
+    // Change to C++ directory.
     entryDir := GetCurrentDirectory();
     ChangeDirectory(PATH_TO_LIB * "point_counting_cpp");
     
@@ -422,15 +455,35 @@ useful information is produced, but one has to correct the output.}
     ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
 
     // Compile.
+    timeBeforeCompile := Cputime();
     retcode := System(compileString);
     if retcode ne 0 then
         ChangeDirectory(entryDir);
         error "Error at compile time step. Exit status: ", retcode;
     end if;
+
+    if PrintTimes then
+        print "Compile time: ", Cputime() - timeBeforeCompile;
+    end if;
     
     // Execute.
-    cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [Minq..Maxq]];
+    if PrintTimes then
+        print "Run times:";
+        cppOutputs := [];
+        for m in [Minq .. Maxq] do
+            timeBeforeRun := Cputime();
+            cppout := Read(POpen("./" * execFile * " " cat Sprint(m), "r"));
 
+            // Notify
+            print "q=2^" * Sprint(m) * ",", Cputime() - timeBeforeRun;
+
+            // Assign
+            cppOutputs[m-Minq+1] := cppout;
+        end for;
+    else
+        cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [Minq..Maxq]];
+    end if;
+    
     try
 	point_counts := [StringToInteger(out) : out in cppOutputs];
     catch e

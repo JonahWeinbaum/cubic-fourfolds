@@ -76,7 +76,6 @@ int main(int argc, char **argv) {
   // Polynomial set.
   unsigned p = polynomials[n];
   
-  // TODO: XXX: Need to regenerate the tables with the flipped indices.
   #ifdef WITHCACHE
   #ifdef COMPARE
   const char incompatible_compile_flags[] = "ERROR: Incompatible compile flags.\n";

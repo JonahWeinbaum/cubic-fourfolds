@@ -174,7 +174,7 @@ int generate_tables(int n) {
   write_table(orbit_rep, q, "orbit_rep_" + qq);
   write_table(orbit_size, q, "orbit_size_" + qq);
 
-  if (n==2) {
+  if (false) {
     compare_2_table(mult, read_table(q, q, "mult_4"), q, q);
     compare_3_table(quadratic_roots, read_table(q, q, 2, "quadratic_roots_4"),
                     q, q, 2);
@@ -184,7 +184,7 @@ int generate_tables(int n) {
 }
 
 int main() {
-  for (int n = 1; n < 12; n++)
+  for (int n = 1; n < 15; n++)
     generate_tables(n);
 
   return 0;
