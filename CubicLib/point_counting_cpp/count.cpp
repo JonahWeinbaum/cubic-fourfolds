@@ -58,11 +58,16 @@ const unsigned polynomials[] = { 1, // placeholder
 // Should have different versions depending on whether using the cache.
 // Compiler will be smart enough to inline.
 // I also want to specifically compile versions for various values of q.
-// #ifdef WITHCACHE
-// #else
-// #ifdef FINITEFIELDBITSIZE
-//   Compile the specific version of mult for this thing.
-// #endif
+#ifdef WITHCACHE
+
+inline unsigned ff2k_mult(unsigned a, unsigned b) {
+  return mult[a][b];
+}
+
+#elif defined FINITEFIELDBITSIZE
+// Compile the specific version of mult for this thing.
+#endif
+
 
 // function prototypes
 int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
@@ -72,11 +77,14 @@ void print_it(unsigned);
 
 int main(int argc, char **argv) {
   std::clock_t cputime = std::clock();
-  const char syntax_error[] = "Argument should be n, for F_{2^n}, where 1 <= n <= 15.\n";
-  if (argc != 2) { printf(syntax_error); return 1; }
+  const char argument_error[] = "Argument should be n, for F_{2^n}, where 1 <= n <= 15.\n";
+  if (argc != 2) {
+    std::cerr << argument_error << std::endl;
+    return 1;
+  }
   int n = atoi(argv[1]);
   if (n < 1 || n > 15) {
-    std::cerr << syntax_error << std::endl;
+    std::cerr << argument_error << std::endl;
     return 1;
   }
   
