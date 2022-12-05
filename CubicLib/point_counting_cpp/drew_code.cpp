@@ -2,8 +2,10 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <wmmintrin.h>
+#include <ctype.h>
 
-const unsigned n = 13;
+const unsigned n = 15;
 const unsigned FINITEFIELDBITSIZE = n;
 
 // our irreducible polynomials
@@ -31,8 +33,9 @@ const unsigned polynomials[] = { 1, // placeholder
   (1<<21) + (1<<2) + 1,
   (1<<22) + (1<<1) + 1 };
 
+const unsigned p = polynomials[n];
 
-static inline uint32_t _ff2k_pclmul (unsigned a, unsigned b)
+static inline uint32_t _ff2k_pclmul(unsigned a, unsigned b)
 {
   const unsigned n = FINITEFIELDBITSIZE;
   register __m128i A, B, C;
@@ -57,13 +60,15 @@ int main() {
   // To benchmark, we are going to use GF(2^13) arithmetic.
   const unsigned q = 1<<n;
 
+  unsigned x=0;
   for (int i=0; i < q; i++) {
-    for (int j=0; j < q; i++) {
-      unsigned x = _ff2k_pclmul(i, j);
+    for (int j=0; j < q; j++) {
+      x += _ff2k_pclmul(i, j);
     }
   }
 
   std::cout << "Total time: " << (std::clock() - cputime) * (1.0/CLOCKS_PER_SEC) << std::endl;
-
+  std::cout << "Dummy value: " << x << std::endl;
+  
   return 0;
 }
