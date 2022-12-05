@@ -405,7 +405,7 @@ intrinsic PointCountingSystemStrings(: ExecNum:=false,
                                        UseCache:=true) -> MonStgElt, MonStgElt
 {Format the compilation string, header file name, and the executable file name for calling g++.}
 
-    compileString := "g++";
+    compileString := "g++ -std=c++11";
 
     if CompilerOptimization then
         compileString *:= " -O3";
@@ -428,7 +428,7 @@ intrinsic PointCountingSystemStrings(: ExecNum:=false,
     compileString *:= " -o " * execFile;
 
     // Finish compile string
-    compileString *:= " tableio.cpp count.cpp";
+    compileString *:= " tableio.cpp Fq_tables.cpp count.cpp";
     
     return compileString, headerFile, execFile;
 end intrinsic;
