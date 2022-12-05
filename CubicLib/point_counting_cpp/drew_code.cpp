@@ -32,13 +32,13 @@ const unsigned polynomials[] = { 1, // placeholder
   (1<<22) + (1<<1) + 1 };
 
 
-static inline uint32_t _ff2k_pclmul (ff2k_t a, ff2k_t b)
+static inline uint32_t _ff2k_pclmul (unsigned a, unsigned b)
 {
   const unsigned n = FINITEFIELDBITSIZE;
   register __m128i A, B, C;
   A[0]=a; B[0] = b;
   C = _mm_clmulepi64_si128 (A,B,0);
-  ff2k_t ab = (ff2k_t)C[0];
+  unsigned ab = (unsigned)C[0];
   
   // Reduce modulo the polynomial.
   unsigned pxi = p << n-2;
