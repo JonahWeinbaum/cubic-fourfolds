@@ -237,7 +237,7 @@ int compare_2_table(unsigned** table1, unsigned** table2, int size1, int size2) 
   for (int i = 0; i < size1; i++)
     for (int j = 0; j < size2; j++)
       if (table1[i][j] != table2[i][j])
-        std::cerr << i << " " << j << " " << table1[i][j] << " " << table2[i][j] << std::endl;
+        std::cerr << "Error " << i << " " << j << " " << table1[i][j] << " " << table2[i][j] << std::endl;
 
   return 0;
 }

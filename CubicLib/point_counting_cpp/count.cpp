@@ -29,31 +29,6 @@ unsigned **mult, **divi,
   // the i'th root of x^3 + sx + t,
   // or q if we're out of roots
 
-// our irreducible polynomials
-const unsigned polynomials[] = { 1, // placeholder
-  1<<1, // for F_2, take x
-  (1<<2) + (1<<1) + 1, // for F_{2^2}, take x^2 + x + 1
-  (1<<3) + (1<<1) + 1, // for F_{2^3}, take x^3 + x + 1
-  (1<<4) + (1<<1) + 1, // etc.
-  (1<<5) + (1<<2) + 1,
-  (1<<6) + (1<<1) + 1,
-  (1<<7) + (1<<1) + 1,
-  (1<<8) + (1<<4) + (1<<3) + (1<<1) + 1,
-  (1<<9) + (1<<1) + 1,
-  (1<<10) + (1<<3) + 1,
-  (1<<11) + (1<<2) + 1,
-  (1<<12) + (1<<3) + 1,
-  (1<<13) + (1<<4) + (1<<3) + (1<<1) + 1,
-  (1<<14) + (1<<5) + 1,
-  (1<<15) + (1<<1) + 1, };
-/* with n > 15 you'll just run out of memory
-  (1<<16) + (1<<5) + (1<<3) + (1<<1) + 1,
-  (1<<17) + (1<<3) + 1,
-  (1<<18) + (1<<3) + 1,
-  (1<<19) + (1<<5) + (1<<2) + (1<<1) + 1,
-  (1<<20) + (1<<3) + 1,
-  (1<<21) + (1<<2) + 1,
-  (1<<22) + (1<<1) + 1 }; */
 
 // TODO: Need to write multiplication function.
 // Should have different versions depending on whether using the cache.
@@ -61,17 +36,21 @@ const unsigned polynomials[] = { 1, // placeholder
 // I also want to specifically compile versions for various values of q.
 #ifdef WITHCACHE
 
-inline unsigned ff2k_mult(unsigned a, unsigned b) {
-  return mult[a][b];
-}
-
-inline unsigned ff2k_divi(unsigned a, unsigned b) {
-  return divi[a][b];
-}
+// Use table multiplication.
 
 #elif defined FINITEFIELDBITSIZE
 // Compile the specific version of mult for this thing.
+// Using assembly inlining.
+
 #endif
+
+inline unsigned mult_ff2k(unsigned a, unsigned b) {
+  return mult[a][b];
+}
+
+inline unsigned divi_ff2k(unsigned a, unsigned b) {
+  return divi[a][b];
+}
 
 
 // function prototypes
@@ -219,10 +198,10 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
     // The cubic is in fact a cubic.
 
     // Make the cubic monic.
-    b = divi[b][a]; c = divi[c][a]; d = divi[d][a];
+    b = divi_ff2k(b, a); c = divi_ff2k(c, a); d = divi_ff2k(d, a);
 
     // Make the cubic depressed.
-    unsigned s = mult[b][b] ^ c, t = mult[b][c] ^ d;
+    unsigned s = mult_ff2k(b, b) ^ c, t = mult_ff2k(b, c) ^ d;
     
     for (int i = 0; i < 3; i++) {
       unsigned r = depressed_cubic_roots[s][t][i];
@@ -237,7 +216,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
     // distinguished point (0:0:0:1).
 
     // Make it monic.
-    c = divi[c][b]; d = divi[d][b];
+    c = divi_ff2k(c, b); d = divi_ff2k(d, b);
     
     for (int i = 0; i < 2; i++) {
       unsigned y_3 = quadratic_roots[c][d][i];
@@ -248,7 +227,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
     
   } else if (c != 0) {
     // The cubic degenerates to a linear polynomial.
-    return contribution_at_P3_point(y_0, y_1, y_2, divi[d][c]);    
+    return contribution_at_P3_point(y_0, y_1, y_2, divi_ff2k(d, c));    
     
   } else if (d == 0) {
     // The cubic degenerates to the identically zero polynomial.
@@ -268,9 +247,9 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
 }
 
 bool Arf_invariant(unsigned X, unsigned Y, unsigned Z) {
-  unsigned XY = mult[X][Y];
-  unsigned ZZ = mult[Z][Z];
-  unsigned XYdivZZ = divi[XY][ZZ];
+  unsigned XY = mult_ff2k(X, Y);
+  unsigned ZZ = mult_ff2k(Z, Z);
+  unsigned XYdivZZ = divi_ff2k(XY, ZZ);
   return quadratic_roots[1][XYdivZZ][0] == NULL_Fq_elt;
 }
 

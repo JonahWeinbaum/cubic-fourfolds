@@ -53,6 +53,26 @@ static inline uint32_t _ff2k_pclmul(unsigned a, unsigned b)
   return ab; 
 } 
 
+static inline uint64_t _ff2k_pclmul_delred(unsigned a, unsigned b)
+{
+  register __m128i A, B, C;
+  A[0]=a; B[0] = b;
+  C = _mm_clmulepi64_si128 (A,B,0);
+  return C[0];  
+} 
+
+unsigned reduce_cubic(int64_t ab) {
+
+  // Reduce modulo the polynomial.
+  int64_t pxi = (int64_t)p << n-2;
+  for (int i = 3*n-3; i >= n; i--) {
+    // If the i-th bit is 1, reduce by the polynomial.
+    if (ab & (1<<i)) ab ^= pxi;
+    pxi = pxi >> 1;
+  }     
+  return (unsigned)ab; 
+
+}
 
 int main() {
   std::clock_t cputime = std::clock();
