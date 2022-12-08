@@ -1,3 +1,7 @@
+#ifndef N
+static_assert(false, "No value of N was specified during compilation.");
+#endif
+
 
 using ff2k_t = unsigned;
 

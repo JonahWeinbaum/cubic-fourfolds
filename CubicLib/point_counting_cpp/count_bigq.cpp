@@ -4,6 +4,7 @@
 #include <iostream>
 #include <tuple>
 #include "tableio.h"
+#include "constants.h"
 #include "Fq.h"
 #include "Fq_tables.h"
 
@@ -18,9 +19,6 @@
 println("Error: No N provided at compile time.");
 return 1;
 #endif
-
-// we're in F_q. On a modern machine we can assume 32 or 64 bit integers.
-const unsigned q = 1 << N;
 
 //const unsigned PLACEHOLDER_Fq_elt = 1 << 16;
 unsigned NULL_Fq_elt;
