@@ -494,7 +494,7 @@ intrinsic PointCountingSystemStrings(: ExecNum:=false,
     compileString *:= " -o " * execFile;
 
     // Finish compile string
-    compileString *:= " tableio.cpp Fq_tables.cpp count.cpp";
+    compileString *:= " tableio.cpp count.cpp";
     
     return compileString, headerFile, execFile;
 end intrinsic;

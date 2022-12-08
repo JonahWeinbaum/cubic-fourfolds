@@ -4,8 +4,8 @@
 #include <iostream>
 #include <tuple>
 #include "tableio.h"
-#include "constants.h"
-#include "Fq.h"
+//#include "constants.h"
+//#include "Fq.h"
 #include "Fq_tables.h"
 
 #ifndef COEFFSFILE

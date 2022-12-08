@@ -30,19 +30,6 @@ unsigned **mult, **divi,
   // or q if we're out of roots
 
 
-// TODO: Need to write multiplication function.
-// Should have different versions depending on whether using the cache.
-// Compiler will be smart enough to inline.
-// I also want to specifically compile versions for various values of q.
-#ifdef WITHCACHE
-
-// Use table multiplication.
-
-#elif defined FINITEFIELDBITSIZE
-// Compile the specific version of mult for this thing.
-// Using assembly inlining.
-
-#endif
 
 inline unsigned ff2k_mult(unsigned a, unsigned b) {
   return mult[a][b];
