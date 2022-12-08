@@ -168,6 +168,60 @@ point of the discriminant to (0:0:0:1)}
     return newcoeffs;
 end intrinsic;
 
+
+intrinsic ConicFibrationForm(cubic, line::ModMatFldElt) -> RngMPol, SeqEnum
+{Given a cubic f and a line L contained in that cubic, change coordinates so that
+L is the standard line y0 = y1 = y2 = y3 = 0. Also return the coefficients of the
+conic fibration.}
+
+    k := GF(2);
+    V6 := VectorSpace(k, 6);
+    R<y0, y1, y2, y3> := PolynomialRing(k, 4);
+    RR<y4, y5> := PolynomialRing(R, 4);
+    
+    // Compute a transformation M such that cubic^M has a line given by y0=...=y3=0.
+    vectorizedline := [V6 ! line[i] : i in [1..4]];
+    M := Matrix(ExtendBasis(vectorizedline, V6))^(-1);
+
+    // Update the cubic and extract coefficients.
+    g := cubic^M;
+    f := Evaluate(g, [y0, y1, y2, y3, y4, y5]);
+    A := MonomialCoefficient(f, y4^2);
+    B := MonomialCoefficient(f, y4*y5);
+    C := MonomialCoefficient(f, y5^2);
+    D := MonomialCoefficient(f, y4);
+    E := MonomialCoefficient(f, y5);
+    F := MonomialCoefficient(f, 1);
+
+    return g, [A,B,C,D,E,F];
+end intrinsic;
+
+intrinsic MatrixToLine(P::Prj, mat::ModMatFldElt) -> Sch
+{Converst a 4x6 matrix into a line.}
+    eqns := [&+[P.i * row[i] : i in [1..6]] : row in Rows(mat)];
+    L := Scheme(P, eqns);
+    return L;
+end intrinsic;
+
+    
+intrinsic LineToMatrix(line::Sch) -> ModFldMatElt
+{}
+    // First convert the line into Echelon form. We do so by extracting the
+    // coefficients of the defining equations.
+    assert Dimension(line) eq 1 and Degree(line) eq 1;
+    eqns := DefiningEquations(line);
+
+    R := Parent(eqns[1]);
+    mat := Matrix(BaseRing(R), [[MonomialCoefficient(ll, R.i) : i in [1..6]] : ll in eqns]);
+    return mat;
+end intrinsic;
+
+intrinsic ConicFibrationForm(cubic, line::Sch) -> RngMPol, SeqEnum
+{}
+    return ConicFibrationForm(cubic, LineToMatrix(line));
+end intrinsic;
+
+
 intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
 {Transforms a cubic into a form as outlined in Addington-Auel Section 3.}
     
@@ -225,10 +279,22 @@ intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
     yvec := Vector(R, [y0, y1, y2, y3]);
     newcoeffs := [Evaluate(co, Eltseq(yvec * ChangeRing(invM4, R))) : co in coeffs];
 
-    return g, newcoeffs;
+    // Also apply the change of coordinates to g. For consistency.
+    gPar  := Parent(g);
+    xvec4 := Vector(gPar, [gPar.i : i in [1..4]]);
+
+    newg := Evaluate(g, Eltseq(xvec4 * ChangeRing(invM4, gPar)) cat [gPar.5, gPar.6]);
+    
+    return newg, newcoeffs;
 end intrinsic;
 
-
+intrinsic ConicFibrationDiscriminant(conicCoeffs) -> RngMPol
+{}
+    A, B, C, D, E, F := Explode(conicCoeffs);
+    disc := C*D^2 + A*E^2 + F*B^2 + B*D*E;
+    return disc;
+end intrinsic;
+                                                         
 intrinsic DiscriminantProjectionEquations(conicCoeffs) -> SeqEnum
 {}
     A, B, C, D, E, F := Explode(conicCoeffs);

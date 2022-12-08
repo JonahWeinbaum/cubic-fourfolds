@@ -539,19 +539,20 @@ end intrinsic;
 
 intrinsic CppInputString(h) -> MonStgElt
 {Given a quantity `h`, return the string needed for Nick Addington's C++ program.}
-    if h eq 0 then return "0";
-    end if;
+    if h eq 0 then return "0"; end if;
     ret := "";
     for m in Monomials(h) do
         j := [Degree(m, Parent(h).i) : i in [1..Rank(Parent(h))] ];
         str := "";
         for k in [0 .. #j-1] do
             for l in [1..j[k+1]] do
-                if str eq "" then str := "y_" cat Sprint(k);
-                else str := "mult[" cat str cat "][" cat "y_" cat Sprint(k) cat "]";
+                if str eq "" then
+                    str := Sprintf("y_%o", k);
+                else
+                    str := Sprintf("ff2k_mult(%o, y_%o)", str, k);
+                    // str := "mult[" cat str cat "][" cat "y_" cat Sprint(k) cat "]";
                 end if;
             end for;
-            
         end for;
         
         if ret eq "" then ret := str;
@@ -769,9 +770,9 @@ intrinsic TateTwist(f::RngUPolElt, j::RngIntElt : q:=2) -> RngUPolElt
     return Evaluate(f, q^(-j) * t);
 end intrinsic;
 
-intrinsic CubicWeilPolynomialToLPolynomial(f::RngUPolElt) -> RngUPolElt
+intrinsic CubicWeilPolynomialToLPolynomial(f::RngUPolElt : q:=2) -> RngUPolElt
 {Converts the Weil polynomial to the zeta function.}
-    g := TateTwist(f, -2); // Untwist.
+g := TateTwist(f, -2 : q:=2); // Untwist.
     return Coefficient(g,0) eq -1 select -g else g;
 end intrinsic;
 

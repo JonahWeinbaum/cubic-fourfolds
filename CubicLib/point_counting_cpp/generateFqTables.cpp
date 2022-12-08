@@ -10,7 +10,7 @@
 
 int main() {
   
-  for (int n = 1; n < 12; n++) {
+  for (int n = 1; n < 15; n++) {
     std::clock_t cputime = std::clock();
 
     unsigned*** depressed_cubic_roots;

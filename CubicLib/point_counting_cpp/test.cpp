@@ -13,6 +13,19 @@ int main() {
   return 0;
 }
 
+// TODO: This whole file is out of date with the current format.
+
+// Sanity check the tables.
+#ifdef COMPARE
+unsigned*** X = read_table(q, q, 2, "quadratic_roots_" + qq);  
+unsigned*** Y = read_table(q, q, 3, "depressed_cubic_roots_" + qq);  
+unsigned** mul1 = read_table(q, q, "mult_" + qq);
+  
+compare_2_table(mul1, mult, q, q);
+  
+compare_3_table(X, quadratic_roots, q, q, 2);
+compare_3_table(Y, depressed_cubic_roots, q, q, 3);
+#endif
 
 int big_test() {
 

@@ -60,6 +60,46 @@ const unsigned polynomials[] = {1, // placeholder
   (t << 22) + (t << 12) + (t << 11) + (t << 10) + (t << 9) + (t << 8) + (t << 6) + (t << 5) + 1
 };
 
+// Use a compile flag to unlock functionality.
+#ifdef N
+#include "Fq.h"
+#else
+// Placeholder function
+static unsigned mult_ff2k(unsigned a, unsigned b) {
+  return 0;
+}
+#endif
+
+std::tuple<unsigned*, unsigned*> generate_orbit_tables(int n) {
+
+  unsigned q = (1<<n);
+  
+  // Galois orbits
+  // allocate and initialize
+  unsigned *orbit_rep = new unsigned[q];
+  for (unsigned i = 0; i < q; i++)
+    orbit_rep[i] = q; // means null
+  
+  unsigned *orbit_size = new unsigned[q]; // only valid if i == orbit_rep[i]
+
+  // fill the tables
+  for (unsigned i = 0; i < q; i++) {
+    if (orbit_rep[i] != q) continue; // already filled
+    unsigned j = i;
+    unsigned size = 1;
+    while (1) {
+      orbit_rep[j] = i;
+      j = ff2k_square(j);
+      if (j == i) {
+        orbit_size[i] = size;
+        break;
+      }
+      size++;
+    } 
+  }
+  
+  return std::make_tuple(orbit_rep, orbit_size);
+}
 
 using all_table_t = std::tuple<unsigned***, unsigned***,
                                unsigned**, unsigned**,
@@ -217,4 +257,43 @@ int* log_table(int n) {
   }
     
   return table;
+}
+
+
+int* cubic_root_count_table(int n) {
+  // In order to generate the cubic lookup table. We need to solve the system
+  //    (x^2 + ax + b)(x+a) = x^3 + sx + t
+  //    a^2 + b = 1.
+  //
+  // This is trivial.
+  //
+  //    b = a^2 + 1
+  //    s = 1
+  //    t = a (a^2 + 1) = a^3 + a.
+  //
+  // Furthermore, note that the quadratic
+  //
+  //    x^2 + ax + a^2
+  //
+  // has a root if and only if either a=0 or Fq has a 3rd root of unity.
+    
+  unsigned q = 1 << n;
+  int* cubic_table = new int[q];
+  bool has_cube_root = ( (n % 2) == 0 ? true : false);
+
+  int num_roots_if_solvable = (has_cube_root ? 3 : 1);
+  
+  // Initialize. Default is zero, since if we don't encounter it, the cubic
+  // will have no roots.
+  for (unsigned i=0; i<q; i++) {
+    cubic_table[i] = 0;
+  }
+
+  // Populate
+  for (unsigned a=0; a<q; a++) {
+    unsigned aaa = ff2k_mult(ff2k_square(a), a);
+    cubic_table[aaa ^ a] = num_roots_if_solvable;
+  }
+  
+  return cubic_table;
 }

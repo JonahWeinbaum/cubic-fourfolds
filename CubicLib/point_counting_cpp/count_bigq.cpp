@@ -2,7 +2,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <tuple>
 #include "tableio.h"
+#include "Fq.h"
 #include "Fq_tables.h"
 
 #ifndef COEFFSFILE
@@ -11,104 +13,59 @@
 #include COEFFSFILE
 #endif
 
+// NOTE: We expect to see a -N flag at compile time.
+#ifndef N
+println("Error: No N provided at compile time.");
+return 1;
+#endif
+
 // we're in F_q. On a modern machine we can assume 32 or 64 bit integers.
-unsigned q;
+const unsigned q = 1 << N;
+
 //const unsigned PLACEHOLDER_Fq_elt = 1 << 16;
 unsigned NULL_Fq_elt;
-
-// lookup tables
-unsigned **mult, **divi,
-
-  ***quadratic_roots,
-  // quadratic_roots[i][a][b] is
-  // the i'th root of x^2 + ax + b, 
-  // or q if we're out of roots
-
-  ***depressed_cubic_roots;
-  // depressed_cubic_roots[i][s][t] is
-  // the i'th root of x^3 + sx + t,
-  // or q if we're out of roots
 
 
 // TODO: Need to write multiplication function.
 // Should have different versions depending on whether using the cache.
 // Compiler will be smart enough to inline.
-// I also want to specifically compile versions for various values of q.
-#ifdef WITHCACHE
 
-// Use table multiplication.
 
-#elif defined FINITEFIELDBITSIZE
-// Compile the specific version of mult for this thing.
-// Using assembly inlining.
+// Should be able to choose between my multiplication and Jonah's
 
-#endif
-
-inline unsigned ff2k_mult(unsigned a, unsigned b) {
-  return mult[a][b];
-}
-
-inline unsigned ff2k_divi(unsigned a, unsigned b) {
-  return divi[a][b];
-}
 
 
 // function prototypes
-int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
-int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
-void print_it(unsigned);
+int contribution_of_fibre_over_A2_point(unsigned, unsigned);
+//int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
+//int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
+//int Arf_invariant_mu2(unsigned, unsigned, unsigned);
 
 
 int main(int argc, char **argv) {
 
-  const char argument_error[] = "Argument should be n, for F_{2^n}, where 1 <= n <= 15.\n";
-  if (argc != 2) {
-    std::cerr << argument_error << std::endl;
-    return 1;
-  }
-  int n = atoi(argv[1]);
-  if (n < 1 || n > 15) {
+  const char argument_error[] =
+    "No argument should be provided for n. Instead, compile with the -N flag.";
+
+  if (argc != 1) {
     std::cerr << argument_error << std::endl;
     return 1;
   }
   
-  q = 1<<n;
   std::string qq = std::to_string(q);
 
-  // TODO: We are temporarily distinguishing the placeholder value from q. In order to not
-  // introduce new bugs, we are keeping the values the same for the time being.
-  NULL_Fq_elt = q;
-  
-  #ifdef WITHCACHE
-  
+  // Start timer
+  std::clock_t cputime = std::clock();
+
+  // NOTE: I still need to generate these tables. They'll fit in memory.
   // Loading of LOCAL variables
-  int* orbit_size = read_table(q, "orbit_size_" + qq, 0);
-  unsigned* orbit_rep = read_table(q, "orbit_rep_" + qq);
-    
-  // Loading of GLOBAL variables
-  mult = read_table(q, q, "mult_" + qq);
-  divi = read_table(q, q, "divi_" + qq);
-  
-  quadratic_roots = read_table(q, q, 2, "quadratic_roots_" + qq);  
-  depressed_cubic_roots = read_table(q, q, 3, "depressed_cubic_roots_" + qq);  
-
-    
-  #else
-
-  // NOTE: These variables are declared as globals above.
-  // unsigned*** depressed_cubic_roots;
-  // unsigned*** quadratic_roots;
-  // unsigned** mult;
-  // unsigned** divi;
-  
   unsigned* orbit_rep;
-  int* orbit_size;
-  std::tie(depressed_cubic_roots,
-           quadratic_roots,
-           mult, divi, orbit_rep, orbit_size) = generate_Fq_tables(n);
-  
-  #endif
-
+  unsigned* orbit_size;
+  std::tie(orbit_rep, orbit_size) = generate_orbit_tables(N);
+    
+  std::cout << "Orbit table generation: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
+            << std::endl;
+  cputime = std::clock();
   
   //////////////////////////////////////////
   // Main calculation
@@ -127,41 +84,77 @@ int main(int argc, char **argv) {
   // equation fed to the code ensures there is a singularity on Delta at (0:0:0:1). Projecting
   // away from this point gives Delta the structure of a generically 3:1 cover of P2.
   //
+
+  //     TODO: Actually, now we use the fact that the Arf invariant is constant on fibres.
+
+  //
+  //
   // Thus, in order to count points, it suffices to enumerate over the points in P2, compute the
   // set of rational points in the fibre, and then check a criterion on the associated conic
   // (see contribution_at_P3_point) in order to determine the correct contribution.
   
   // The contribution to the point count from the distinguished singularity.
-  int diff = contribution_at_P3_point(0,0,0,1);
+  //int diff = contribution_at_P3_point(0,0,0,1);
 
+  int diff = 0; // TODO: XXX: For benchmarking, I've turned this off, but we need a way
+  // to handle the lack of lookup tables.
+  
   // We next look at the open subscheme Delta - (0:0:0:1). 
   // We enumerate over the points in P2. Because the equation for X is defined over F2, we may
   // speed up the computation by using the natural symmetry provided by Galois action.
   // 
   // We use the standard decomposition of P2 = {pt} + A1 + A2.
 
-  // The contribution from the fibre over (0:0:1).
-  diff += contribution_of_fibre_over_P2_point(0, 0, 1);
+  
+  // The contribution from the fibre over (1:0:0).
+  //diff += contribution_of_fibre_over_P2_point(1, 0, 0);
 
   // The contribution over the hyperplane at infinity.
-  for (unsigned y_2 = 0; y_2 < q; y_2++)
-    if (orbit_rep[y_2] == y_2)
-      diff += contribution_of_fibre_over_P2_point(0, 1, y_2) * orbit_size[y_2];
+  // TODO: The thing to do here is project from a rational singular point
+  //       and do algorithm classic (but without lookup tables).
+  // for (unsigned y_2 = 0; y_2 < q; y_2++)
+  //  if (orbit_rep[y_2] == y_2)
+  //    diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
   
-  // The contribution from the A2 part. 
+  // The contribution from the A2 part.
+  // TODO: I halfway wonder if there is a smarter way to enumerate over the space...
+  // Namely, using Artin-Schrier tricks.
   for (unsigned y_1 = 0; y_1 < q; y_1++)
     if (orbit_rep[y_1] == y_1)
-      for (unsigned y_2 = 0; y_2 < q; y_2++)
-        diff += contribution_of_fibre_over_P2_point(1, y_1, y_2) * orbit_size[y_1];
+      for (unsigned y_2 = 0; y_2 < q; y_2++) {
+        //int arf = Arf_invariant_mu2(y_1, 1, y_2);
+        int arf = 1;
+        diff += arf * contribution_of_fibre_over_A2_point(y_1, y_2) * orbit_size[y_1];
+      }
+
+  std::cout << "Iterate time: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
+            << std::endl;
 
   
   //////////////////////////////////////
   // Final calculation of the formula.
-  long Q = q; // to avoid overflows
-  printf("%ld\n", Q*Q*Q*Q + Q*Q*Q + Q*diff + Q + 1); // Send output to magma pipe.
+  long long Q = q; // to avoid overflows
+  std::cout <<  Q*Q*Q*Q + Q*Q*Q + Q*diff + Q + 1 << std::endl; // Send output to magma pipe.
   return 0;
 }
 
+int contribution_of_fibre_over_A2_point(unsigned y_0, unsigned y_2) {
+
+  // Magma will give us a fibration where A,B,C = y0,y1,y2. In particular, though
+  // the degree is higher, the Arf invariant is *constant* along the fibres. Thus,
+  // we need only determine the number of roots lying over a given point.
+  const unsigned y_1 = 1;
+
+  unsigned abcd; // coefficients of 4:1 cover, defined in coeffs.h
+
+  unsigned e = 0; // TODO: Actually need to fix this...
+  
+  unsigned f[] = {e,d,c,b,a};
+  
+  return count_poly_roots(f, 4);  
+}
+
+/*
 // contribution_of_fibre_over_P2_point
 //
 // iterate over the three sheets of the quintic,
@@ -274,3 +267,4 @@ int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned 
   // We should never run into this case.
   throw std::runtime_error("Conic is not singular.");
 }
+*/
