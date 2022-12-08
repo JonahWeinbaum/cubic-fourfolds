@@ -63,8 +63,7 @@ int main(int argc, char **argv) {
   q = 1<<n;
   std::string qq = std::to_string(q);
 
-  // TODO: We are temporarily distinguishing the placeholder value from q. In order to not
-  // introduce new bugs, we are keeping the values the same for the time being.
+  // Placeholder value for q. (Global variable)
   NULL_Fq_elt = q;
   
   #ifdef WITHCACHE
@@ -249,8 +248,9 @@ int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
 int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned y_3) {
   unsigned ABCDEF; // coefficients of the conic, defined in coeffs.h
 
-  // TODO: We need to account for the case where the conic has rank 0.
-  // I think when taking into account AA's formula, this means adding q.
+  // The conic has rank 0. It is an entire copy of P2.
+  // Note that (q^2 + q + 1) - 1 = q(q+1)
+  // TODO: Explain why q is the right number.
   if (A == 0 && B == 0 && C == 0 && D == 0 && E == 0 && F == 0)
     return q;
   

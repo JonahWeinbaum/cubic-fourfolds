@@ -199,13 +199,13 @@ int* log_table(int n) {
   int xpow = 1;
   for (int pow=0; pow < halfq; pow++) {
     table[xpow] = pow;
-    xpow *= x; // TODO: Wrong multiplication.
+    xpow = ff2k_mult(xpow, x); 
   }
 
   // Flip the sign in the second half for fast inversion.
   for (int pow=halfq; pow < q-1; pow++) {
     table[xpow] = (q - pow);
-    xpow *= x; // TODO: Wrong multiplication.
+    xpow = ff2k_mult(xpow, x); 
   }
     
   return table;

@@ -4,8 +4,6 @@
 #include <iostream>
 #include <tuple>
 #include "tableio.h"
-//#include "constants.h"
-//#include "Fq.h"
 #include "Fq_tables.h"
 
 #ifndef COEFFSFILE
@@ -20,18 +18,7 @@ println("Error: No N provided at compile time.");
 return 1;
 #endif
 
-//const unsigned PLACEHOLDER_Fq_elt = 1 << 16;
-unsigned NULL_Fq_elt;
-
-
-// TODO: Need to write multiplication function.
-// Should have different versions depending on whether using the cache.
-// Compiler will be smart enough to inline.
-
-
-// Should be able to choose between my multiplication and Jonah's
-
-
+// TODO: Update with Jonah's multiplication function, if it does OK.
 
 // function prototypes
 int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
@@ -60,7 +47,7 @@ int main(int argc, char **argv) {
   unsigned* orbit_size;
   std::tie(orbit_rep, orbit_size) = generate_orbit_tables(N);
     
-  std::cout << "Orbit table generation: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
+  std::cerr << "Orbit table generation: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
             << std::endl;
   cputime = std::clock();
   
@@ -77,21 +64,18 @@ int main(int argc, char **argv) {
   //
   //     #X(Fq) = q^4 + q^3 + q * diff + q + 1.
   //
-  // In order to compute diff, we need to find all of the rational points on Delta. The
-  // equation fed to the code ensures there is a singularity on Delta at (0:0:0:1). Projecting
-  // away from this point gives Delta the structure of a generically 3:1 cover of P2.
-  //
-
-  //     TODO: Actually, now we use the fact that the Arf invariant is constant on fibres.
-
-  //
+  // In order to compute diff, we project away from a particular point on Delta (assumed to
+  // be at (0:0:0:1)). This projection is further assumed to be given by (A : B : C).
+  // In other words, that the Arf in variant is *constant along fibres*!
+  // 
+  // This gives Delta the structure of a generically 4:1 cover of P2.
   //
   // Thus, in order to count points, it suffices to enumerate over the points in P2, compute the
-  // set of rational points in the fibre, and then check a criterion on the associated conic
-  // (see contribution_at_P3_point) in order to determine the correct contribution.
+  // Arf invariant (as a function of the base), and count the number of rational points in the
+  // fibre. 
+  // See contribution_at_P3_point in order to determine the correct contribution.
   
   // The contribution to the point count from the distinguished singularity.
-  //
   int diff = contribution_at_P3_point(0,0,0,1);
 
   
@@ -119,7 +103,7 @@ int main(int argc, char **argv) {
         diff += contribution_of_fibre_over_P2_point(y_1, 1, y_2) * orbit_size[y_1];
       }
 
-  std::cout << "Iterate time: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
+  std::cerr << "Iterate time: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
             << std::endl;
 
   
@@ -137,14 +121,10 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   // we need only determine the number of roots lying over a given point.
   
   int arf = 1; // TODO: We should only ever call this function when the arf invariant is 1.
-
-  unsigned abcd; // coefficients of 4:1 cover, defined in coeffs.h
-
-  unsigned e = 0; // TODO: Actually need to fix this...
-  
+  unsigned abcde; // coefficients of 4:1 cover, defined in coeffs.h
   unsigned f[] = {e,d,c,b,a};
 
-  return count_poly_roots(f, 4);  
+  return count_poly_roots(f, 4);
 }
 
 /*

@@ -20,7 +20,7 @@ inline ff2k_t ff2k_mult(ff2k_t a, ff2k_t b)
   ff2k_t ab = (ff2k_t)C[0];
   
   // Reduce modulo the polynomial.
-  ff2k_t pxi = p << n-2;
+  ff2k_t pxi = p << (n-2);
   for (int i = 2*n-2; i >= n; i--) {
     // If the i-th bit is 1, reduce by the polynomial.
     if (ab & (1<<i)) ab ^= pxi;

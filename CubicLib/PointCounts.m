@@ -412,6 +412,7 @@ end intrinsic;
 
 intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11,
                               CompilerOptimization:=false,
+                              CompileEachQ:=false,                              
                               UseCache:=true,
                               PrintTimes:=false) -> SeqEnum
 {Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
@@ -435,6 +436,7 @@ intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11,
     cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
                                            : ExecNum:=ExecNum, Minq:=Minq, Maxq:=Maxq,
                                              CompilerOptimization:=CompilerOptimization,
+                                             CompileEachQ:=CompileEachQ,
                                              UseCache:=UseCache,
                                              PrintTimes:=PrintTimes);
     
@@ -443,9 +445,7 @@ end intrinsic;
 
 intrinsic PointCounts(cubic, m) -> RngIntElt
 {Compute the point counts on the given smooth cubic over F_(2^m). }
-
-return PointCounts(cubic : Minq:=m, Maxq:=m);
-
+    return PointCounts(cubic : Minq:=m, Maxq:=m);
 end intrinsic;
 
 intrinsic PointCountsNoTransform(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
@@ -468,13 +468,28 @@ Primarily, this function is used for testing.}
     return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;
 
+
 intrinsic PointCountingSystemStrings(: ExecNum:=false,
                                        CompilerOptimization:=false,
-                                       UseCache:=true) -> MonStgElt, MonStgElt
+                                       FixN:=false,
+                                       UseCache:=true,
+                                       Warn:=true) -> MonStgElt, MonStgElt, MonStgElt
 {Format the compilation string, header file name, and the executable file name for calling g++.}
 
     compileString := "g++ -std=c++11";
 
+    if not Warn then
+        compileString *:= " -w";
+    end if;
+
+    // NOTE: On ARM chips, Magma emulates x86 anyways.
+    processor := Read(POpen("arch", "r")); 
+    if processor eq "arm\n" then
+        compileString *:= " -DARM";
+    else
+        compileString *:= " -mpclmul";
+    end if;
+    
     if CompilerOptimization then
         compileString *:= " -O3";
     end if;
@@ -495,62 +510,112 @@ intrinsic PointCountingSystemStrings(: ExecNum:=false,
 
     compileString *:= " -o " * execFile;
 
-    // Finish compile string
-    compileString *:= " tableio.cpp count.cpp";
+    // Finish compile string    
+    if FixN cmpeq false then
+        compileString *:= " tableio.cpp count.cpp";
+    else
+        compileString *:= Sprintf(" -DN=%o count_bigq.cpp", FixN);
+    end if;
     
     return compileString, headerFile, execFile;
 end intrinsic;
 
-intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs
-                                    : ExecNum:=false, Minq:= 1, Maxq:=11,
-                                      CompilerOptimization:=false, UseCache:=true,
-                                      PrintTimes:=false) -> SeqEnum
-{Call the C++ point counting engine. The output of this function is the correct point counts
-*assuming* that the line defining the conic fibration lies in the smooth locus. Otherwise,
-useful information is produced, but one has to correct the output.}
 
-    // Create relevant strings.
-    compileString, headerFile, execFile :=
-        PointCountingSystemStrings( : ExecNum:=ExecNum,
-                                      CompilerOptimization:=CompilerOptimization,
-                                      UseCache:=UseCache);
-
-    // Change to C++ directory.
-    entryDir := GetCurrentDirectory();
-    ChangeDirectory(PATH_TO_LIB * "point_counting_cpp");
-    
-    // Prepare C++ code.
-    ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
-
-    // Compile.
+intrinsic CompileCppCounter(compileString : PrintTimes:=PrintTimes)
+{}
     timeBeforeCompile := Cputime();
     retcode := System(compileString);
     if retcode ne 0 then
-        ChangeDirectory(entryDir);
         error "Error at compile time step. Exit status: ", retcode;
     end if;
 
     if PrintTimes then
         print "Compile time: ", Cputime() - timeBeforeCompile;
     end if;
+
+    return;
+end intrinsic;
+
+
+intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs
+                                    : ExecNum:=false, Minq:= 1, Maxq:=11,
+                                      CompilerOptimization:=false,
+                                      CompileEachQ:=false,
+                                      UseCache:=true,
+                                      PrintTimes:=false) -> SeqEnum
+{Call the C++ point counting engine. The output of this function is the correct point counts
+*assuming* that the line defining the conic fibration lies in the smooth locus. Otherwise,
+useful information is produced, but one has to correct the output.}
+
+    // Change to C++ directory.
+    entryDir := GetCurrentDirectory();
+    ChangeDirectory(PATH_TO_LIB * "point_counting_cpp");
+    
+    if not CompileEachQ then
+        // Create relevant strings.
+        compileString, headerFile, execFile :=
+            PointCountingSystemStrings( : ExecNum:=ExecNum,
+                                          CompilerOptimization:=CompilerOptimization,
+                                          UseCache:=UseCache);
+
+    else
+        // Just extract information for header files.
+        _, headerFile, execFile := PointCountingSystemStrings( : ExecNum:=ExecNum);
+    end if;
+
+    // Prepare C++ code.
+    ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
+
+    // Compile (if not fixing q)
+    if not CompileEachQ then
+        try
+            CompileCppCounter(compileString : PrintTimes:=PrintTimes);
+        catch e
+            ChangeDirectory(entryDir);
+            error e;
+        end try;
+    end if;
     
     // Execute.
-    if PrintTimes then
-        print "Run times:";
-        cppOutputs := [];
-        for m in [Minq .. Maxq] do
-            timeBeforeRun := Cputime();
-            cppout := Read(POpen("./" * execFile * " " cat Sprint(m), "r"));
+    if PrintTimes then print "Run times:"; end if;
+    cppOutputs := [];
+    
+    for m in [Minq .. Maxq] do
 
-            // Notify
-            print "q=2^" * Sprint(m) * ",", Cputime() - timeBeforeRun;
+        if not CompileEachQ then
+            processString := Sprintf("./%o %o", execFile, m);
+        else
+            warn := (m eq Minq);
+            // Compile a version for q=2^m.
+            compileString :=
+            PointCountingSystemStrings( : ExecNum:=ExecNum,
+                                          FixN:=m,
+                                          CompilerOptimization:=true, // Force optimization.
+                                          UseCache:=false, // No tables.
+                                          Warn:=warn
+                                      );
 
-            // Assign
-            cppOutputs[m-Minq+1] := cppout;
-        end for;
-    else
-        cppOutputs := [Read(POpen("./" * execFile * " " cat Sprint(m), "r")) : m in [Minq..Maxq]];
-    end if;
+            try
+                CompileCppCounter(compileString : PrintTimes:=PrintTimes);
+            catch e
+                ChangeDirectory(entryDir);
+                error e;
+            end try;
+
+            processString := Sprintf("./%o", execFile);            
+        end if;
+
+        timeBeforeRun := Cputime();
+        cppout := Read(POpen(processString, "r"));
+
+        // Notify            
+        if PrintTimes then
+            print Sprintf("q=2^%o,", m), Cputime() - timeBeforeRun;
+        end if;
+        
+        // Assign
+        cppOutputs[m-Minq+1] := cppout;
+    end for;
     
     try
 	point_counts := [StringToInteger(out) : out in cppOutputs];
