@@ -34,9 +34,8 @@ unsigned NULL_Fq_elt;
 
 
 // function prototypes
-int contribution_of_fibre_over_A2_point(unsigned, unsigned);
-//int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
-//int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
+int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
+int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
 //int Arf_invariant_mu2(unsigned, unsigned, unsigned);
 
 
@@ -92,10 +91,9 @@ int main(int argc, char **argv) {
   // (see contribution_at_P3_point) in order to determine the correct contribution.
   
   // The contribution to the point count from the distinguished singularity.
-  //int diff = contribution_at_P3_point(0,0,0,1);
+  //
+  int diff = contribution_at_P3_point(0,0,0,1);
 
-  int diff = 0; // TODO: XXX: For benchmarking, I've turned this off, but we need a way
-  // to handle the lack of lookup tables.
   
   // We next look at the open subscheme Delta - (0:0:0:1). 
   // We enumerate over the points in P2. Because the equation for X is defined over F2, we may
@@ -105,14 +103,12 @@ int main(int argc, char **argv) {
 
   
   // The contribution from the fibre over (1:0:0).
-  //diff += contribution_of_fibre_over_P2_point(1, 0, 0);
+  diff += contribution_of_fibre_over_P2_point(1, 0, 0);
 
   // The contribution over the hyperplane at infinity.
-  // TODO: The thing to do here is project from a rational singular point
-  //       and do algorithm classic (but without lookup tables).
-  // for (unsigned y_2 = 0; y_2 < q; y_2++)
-  //  if (orbit_rep[y_2] == y_2)
-  //    diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
+  for (unsigned y_2 = 0; y_2 < q; y_2++)
+   if (orbit_rep[y_2] == y_2)
+     diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
   
   // The contribution from the A2 part.
   // TODO: I halfway wonder if there is a smarter way to enumerate over the space...
@@ -120,9 +116,7 @@ int main(int argc, char **argv) {
   for (unsigned y_1 = 0; y_1 < q; y_1++)
     if (orbit_rep[y_1] == y_1)
       for (unsigned y_2 = 0; y_2 < q; y_2++) {
-        //int arf = Arf_invariant_mu2(y_1, 1, y_2);
-        int arf = 1;
-        diff += arf * contribution_of_fibre_over_A2_point(y_1, y_2) * orbit_size[y_1];
+        diff += contribution_of_fibre_over_P2_point(y_1, 1, y_2) * orbit_size[y_1];
       }
 
   std::cout << "Iterate time: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
@@ -136,19 +130,20 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-int contribution_of_fibre_over_A2_point(unsigned y_0, unsigned y_2) {
+int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2) {
 
   // Magma will give us a fibration where A,B,C = y0,y1,y2. In particular, though
   // the degree is higher, the Arf invariant is *constant* along the fibres. Thus,
   // we need only determine the number of roots lying over a given point.
-  const unsigned y_1 = 1;
+  
+  int arf = 1; // TODO: We should only ever call this function when the arf invariant is 1.
 
   unsigned abcd; // coefficients of 4:1 cover, defined in coeffs.h
 
   unsigned e = 0; // TODO: Actually need to fix this...
   
   unsigned f[] = {e,d,c,b,a};
-  
+
   return count_poly_roots(f, 4);  
 }
 
@@ -231,6 +226,8 @@ bool Arf_invariant(unsigned X, unsigned Y, unsigned Z) {
 int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
   return Arf_invariant(X, Y, Z) == 1 ? -1 : 1;
 }
+*/
+
 
 // contribution_at_P3_point (Should be named "points on parametrized conic" or something.)
 //
@@ -244,25 +241,32 @@ int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
 int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned y_3) {
   unsigned ABCDEF; // coefficients of the conic, defined in coeffs.h
 
-  // TODO: We need to account for the case where the conic has rank 0.
-  // I think when taking into account AA's formula, this means adding q.
+  // The conic has rank 0, so the correct difference factor is q.
   if (A == 0 && B == 0 && C == 0 && D == 0 && E == 0 && F == 0)
     return q;
-  
+
   // The conic is rank 1. It is a double line in characteristic 2.
   if (B == 0 && D == 0 && E == 0)
     return 0;
 
   // The conic is rank 2. We look at Arf invariants.
+  if (A == 0 && B == 0 && C == 0) {
+    return 1; // The conic is indeed split.
+  }
+
+  // We should never run into this case.
+  throw std::runtime_error("Not implemented past this point.");
+
+  /*
   if (B != 0)
     return Arf_invariant_mu2(A, C, B);
   if (D != 0)
     return Arf_invariant_mu2(A, F, D);
   if (E != 0)
     return Arf_invariant_mu2(C, F, E);
-
+  */
   
   // We should never run into this case.
   throw std::runtime_error("Conic is not singular.");
 }
-*/
+
