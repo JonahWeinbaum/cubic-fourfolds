@@ -65,7 +65,7 @@ const unsigned polynomials[] = {1, // placeholder
 #include "Fq.h"
 #else
 // Placeholder function
-static unsigned mult_ff2k(unsigned a, unsigned b) {
+static unsigned ff2k_mult(unsigned a, unsigned b) {
   return 0;
 }
 #endif
