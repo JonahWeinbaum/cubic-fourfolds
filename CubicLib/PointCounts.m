@@ -303,25 +303,27 @@ intrinsic DiscriminantProjectionEquations(conicCoeffs) -> SeqEnum
     RRR<y3> := PolynomialRing(rrr, 1);
     disc := Evaluate(C*D^2 + A*E^2 + F*B^2 + B*D*E, [RRR!y0, RRR!y1, RRR!y2, RRR!y3]);
 
-    a := MonomialCoefficient(disc, y3^3);
-    b := MonomialCoefficient(disc, y3^2);
-    c := MonomialCoefficient(disc, y3);
-    d := MonomialCoefficient(disc, 1);    
+    a := MonomialCoefficient(disc, y3^4);
+    b := MonomialCoefficient(disc, y3^3);
+    c := MonomialCoefficient(disc, y3^2);
+    d := MonomialCoefficient(disc, y3);    
+    e := MonomialCoefficient(disc, 1);
     
-    return [a, b, c, d];
+    return [a, b, c, d, e];
 end intrinsic;
 
 
 function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
 
     A, B, C, D, E, F := Explode(conicCoeffs);
-    a, b, c, d := Explode(discCoeffs);
+    a, b, c, d, e := Explode(discCoeffs);
     
-    string :=  "#define abcd \\" cat "\n" cat 
+    string :=  "#define abcde \\" cat "\n" cat 
                "    a = " cat CppInputString(a) cat ", \\" cat "\n" cat
 	       "    b = " cat CppInputString(b) cat ", \\" cat "\n" cat
 	       "    c = " cat CppInputString(c) cat ", \\" cat "\n" cat
-	       "    d = " cat CppInputString(d) cat "\n" cat "\n" cat
+	       "    d = " cat CppInputString(d) cat ", \\" cat "\n" cat
+               "    e = " cat CppInputString(e) cat "\n" cat "\n" cat
 	       "#define ABCDEF \\" cat "\n" cat
 	       "    A = " cat CppInputString(A) cat ", \\" cat "\n" cat
 	       "    B = " cat CppInputString(B) cat ", \\" cat "\n" cat

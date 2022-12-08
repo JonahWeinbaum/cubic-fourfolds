@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <assert.h>
 #include "tableio.h"
 #include "Fq_tables.h"
 
@@ -158,49 +159,57 @@ int main(int argc, char **argv) {
 // Then return the number of points on the singular conic associated to that root.
 //
 int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2) {
-  unsigned abcd; // coefficients of 3:1 cover, defined in coeffs.h
+  unsigned abcde; // coefficients of 3:1 cover, defined in coeffs.h
 
+  assert(a==0); // Ensure the cover is actually degree 3, for this version of the code.
+
+  // For ease of reading.
+  unsigned poly[] = {e,d,c,b,a};
+  
   // iterate over the three sheets of the quintic,
   // i.e. the three roots of a y_3^3 + b y_3^2 + c y_3 + d
 
   int ret = 0;
 
-  if (a != 0) {
+  if (poly[3] != 0) {
     // The cubic is in fact a cubic.
 
     // Make the cubic monic.
-    b = ff2k_divi(b, a); c = ff2k_divi(c, a); d = ff2k_divi(d, a);
+    poly[2] = ff2k_divi(poly[2], poly[3]);
+    poly[1] = ff2k_divi(poly[1], poly[3]);
+    poly[0] = ff2k_divi(poly[0], poly[3]);
 
     // Make the cubic depressed.
-    unsigned s = ff2k_mult(b, b) ^ c, t = ff2k_mult(b, c) ^ d;
+    unsigned s = ff2k_square(poly[2]) ^ poly[1];
+    unsigned t = ff2k_mult(poly[2], poly[1]) ^ poly[0];
     
     for (int i = 0; i < 3; i++) {
       unsigned r = depressed_cubic_roots[s][t][i];
       if (r == NULL_Fq_elt) break;
-      ret += contribution_at_P3_point(y_0, y_1, y_2, r ^ b);
+      ret += contribution_at_P3_point(y_0, y_1, y_2, r ^ poly[2]);
     }
     return ret;
     
-  } else if (b != 0) {
+  } else if (poly[2] != 0) {
     // The leading coefficient is zero, so there are only two roots.
     // This corresponds to the case the projecting line is tangent at the
     // distinguished point (0:0:0:1).
 
     // Make it monic.
-    c = ff2k_divi(c, b); d = ff2k_divi(d, b);
+    poly[1] = ff2k_divi(poly[1], poly[2]); poly[0] = ff2k_divi(poly[0], poly[2]);
     
     for (int i = 0; i < 2; i++) {
-      unsigned y_3 = quadratic_roots[c][d][i];
+      unsigned y_3 = quadratic_roots[poly[1]][poly[0]][i];
       if (y_3 == NULL_Fq_elt) break;
       ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
     }
     return ret;
     
-  } else if (c != 0) {
+  } else if (poly[1] != 0) {
     // The cubic degenerates to a linear polynomial.
-    return contribution_at_P3_point(y_0, y_1, y_2, ff2k_divi(d, c));    
+    return contribution_at_P3_point(y_0, y_1, y_2, ff2k_divi(poly[0], poly[1]));    
     
-  } else if (d == 0) {
+  } else if (poly[0] == 0) {
     // The cubic degenerates to the identically zero polynomial.
     // That is, the fibre over the input point is an entire line.
 

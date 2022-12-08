@@ -195,7 +195,7 @@ int count_poly_roots(unsigned* poly, int deg) {
   // Compute x^q mod f(x). 
   unsigned powx[deg];
   unsigned sqpowx[2*deg-1];
-
+ 
   // Initialize
   for (int ll=0; ll <= deg-1; ll++) {
     powx[ll] = 0;
@@ -204,7 +204,8 @@ int count_poly_roots(unsigned* poly, int deg) {
     sqpowx[ll] = 0;
   }          
   powx[1] = 1;
-  
+
+  // Square-Reduce loop
   for (int i=0; i < n; i++) {
     // Square
     for (int j=0; j<=deg-1; j++) {
