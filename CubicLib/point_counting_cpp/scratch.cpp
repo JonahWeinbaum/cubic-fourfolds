@@ -1,9 +1,11 @@
 #include <wmmintrin.h>
 #include <ctype.h>
 #include <iostream>
+#include <ctime>
+#include <bitset>
 #include "tableio.h"
 
-const unsigned n = 11;
+const unsigned n = 15;
 const unsigned FINITEFIELDBITSIZE = n;
 
 // our irreducible polynomials
@@ -47,37 +49,75 @@ using ff2k_t = unsigned;
 
 static inline ff2k_t _ff2k_pclmul (ff2k_t a, ff2k_t b)
 {
-  const unsigned n = FINITEFIELDBITSIZE;
-  register __m128i A, B, C;
-  A[0]=a; B[0] = b;
-  C = _mm_clmulepi64_si128 (A,B,0);
-  ff2k_t ab = (ff2k_t)C[0];
-  
-  // Reduce modulo the polynomial.
-  unsigned pxi = p << n-2;
-  for (int i = 2*n-2; i >= n; i--) {
-    // If the i-th bit is 1, reduce by the polynomial.
-    if (ab & (1<<i)) ab ^= pxi;
-    pxi = pxi >> 1;
-  }     
-  return ab;
+  uint32_t c = 0;
+  for (int i = 0; i < 15; i++) {
+    c ^= ((a >> i) & 1) ? b : 0;
+    c = c >> 1 | c << (15 - 1);
+    c &= 0x7FFF;
+    c ^= ((c >> 15) & 1) ? ((1<<15) + (1<<1) + 1) : 0;
+  }
+  //c ^= ((1<<22) + (1<<1) + 1)*((c >> 22) & 1);
+  return c;
 }
+
+// static inline uint32_t _ff2k_pclmul(unsigned a, unsigned b)
+// {
+//   const unsigned n = FINITEFIELDBITSIZE;
+//   register __m128i A, B, C;
+//   A[0]=a; B[0] = b;
+//   C = _mm_clmulepi64_si128 (A,B,0);
+//   unsigned ab = (unsigned)C[0];
+  
+//   // Reduce modulo the polynomial.
+//   unsigned pxi = p << n-2;
+//   for (int i = 2*n-2; i >= n; i--) {
+//     // If the i-th bit is 1, reduce by the polynomial.
+//     if (ab & (1<<i)) ab ^= pxi;
+//     pxi = pxi >> 1;
+//   }     
+//   return ab; 
+// } 
 
 // #endif
 
 // Test the code
 int main() {
-    unsigned q = 1<<n;
-    unsigned** mult = read_table(q, q, "mult_" + std::to_string(q));
-    unsigned** mult_new = new unsigned*[q];
-    
-    for (int i=0; i<q; i++) {
-      mult_new[i] = new unsigned[q];
-      for (int j=0; j<q; j++) {
-	mult_new[i][j] = _ff2k_pclmul(i, j);
-      }
-    }
+  std::clock_t cputime = std::clock();
+  
+  // To benchmark, we are going to use GF(2^13) arithmetic.
+  const unsigned q = 1<<n;
 
-    compare_2_table(mult, mult_new, q, q);
-    return 0;
+  unsigned x=0;
+  for (int i=0; i < q; i++) {
+    for (int j=0; j < q; j++) {
+      x += _ff2k_pclmul(i, j);
+    }
+  }
+
+  std::cout << "Total time: " << (std::clock() - cputime) * (1.0/CLOCKS_PER_SEC) << std::endl;
+  std::cout << "Dummy value: " << x << std::endl;
+  
+  return 0;
+
+  // unsigned q = 1<<n;
+  // unsigned** mult = read_table(q, q, "mult_" + std::to_string(q));
+  // unsigned** mult_new = new unsigned*[q];
+  
+  // for (int i=0; i<q; i++) {
+  //   mult_new[i] = new unsigned[q];
+  //   for (int j=0; j<q; j++) {
+  // //     uint32_t ret = _ff2k_pclmul(i, j);
+  // //     // Reduce modulo the polynomial.
+  // //     unsigned pxi = p << n-2;
+  // //     for (int i = 2*n-2; i >= n; i--) {
+  // //       // If the i-th bit is 1, reduce by the polynomial.
+  // //       if (ret & (1<<i)) ret ^= pxi;
+  // //       pxi = pxi >> 1;
+  // //     }     
+  //     mult_new[i][j] =  _ff2k_pclmul(i, j);
+  //   }
+  // }
+
+ // compare_2_table(mult, mult_new, q, q);
+return 0;
 }

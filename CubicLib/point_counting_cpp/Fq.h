@@ -84,6 +84,14 @@ ff2k_t ff2k_divi(ff2k_t a, ff2k_t b) {
   return ff2k_mult(a, ff2k_inv(b));
 }
 
+ff2k_t ff2k_sqrt(ff2k_t a) {
+  const int n = FINITEFIELDBITSIZE;
+  ff2k_t s = a;
+  for (int i=1; i<=n-1; i++) {
+    s = ff2k_square(s); // Compute a^(2^(n-1)).
+  }
+  return s;
+}
 
 /*
 unsigned reduce_cubic(uint64_t ab) {

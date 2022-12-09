@@ -131,11 +131,31 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   // the degree is higher, the Arf invariant is *constant* along the fibres. Thus,
   // we need only determine the number of roots lying over a given point.
 
+  // Define ABC
+  
+  // TODO: If B is identically zero, then we have an issue.
+
+  
   // TODO: We should only ever call this function when the arf invariant is 1.
   int arf=0;
   if (y_1 == 1) {
     arf = Arf_invariant_mu2(y_0, y_1, y_2);
   } else {
+    //   1. Determine A, C, D, E.
+    //   2. Compute the roots of the right quadratic equation.
+    //      (Delta=0, B=0 causes factorization).
+    //   3. Compute the Arf invariant of the resulting expression.
+
+    unsigned ABCDEF; // Dammit...DEF depend on y_3.
+
+    // Need sqrt A, sqrt C.
+    unsigned sqrtA = ff2k_sqrt(A);
+    unsigned sqrtC = ff2k_sqrt(C);
+
+    // The correct quadratic is (sqrt(C) * D + sqrt(A) * E).
+    
+    unsigned* rts = quadratic_roots();
+    
     throw std::runtime_error("Not implemented.");
   }
   
@@ -146,88 +166,8 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
 }
 
 // contribution_of_fibre_over_point_at_infinity() {
-//   1. Determine A, C, D, E.
-//   2. Compute the roots of the right quadratic equation. (Delta=0, B=0 causes factorization).
-//   3. Compute the Arf invariant of the resulting expression.
 // }
 
-/*
-// contribution_of_fibre_over_P2_point
-//
-// iterate over the three sheets of the quintic,
-// i.e. the three roots of a y_3^3 + b y_3^2 + c y_3 + d
-//
-// Use Cardano's formula to determine the roots of the cubic.
-// Then return the number of points on the singular conic associated to that root.
-//
-int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2) {
-  unsigned abcd; // coefficients of 3:1 cover, defined in coeffs.h
-
-  // iterate over the three sheets of the quintic,
-  // i.e. the three roots of a y_3^3 + b y_3^2 + c y_3 + d
-
-  int ret = 0;
-
-  if (a != 0) {
-    // The cubic is in fact a cubic.
-
-    // Make the cubic monic.
-    b = ff2k_divi(b, a); c = ff2k_divi(c, a); d = ff2k_divi(d, a);
-
-    // Make the cubic depressed.
-    unsigned s = ff2k_mult(b, b) ^ c, t = ff2k_mult(b, c) ^ d;
-    
-    for (int i = 0; i < 3; i++) {
-      unsigned r = depressed_cubic_roots[s][t][i];
-      if (r == NULL_Fq_elt) break;
-      ret += contribution_at_P3_point(y_0, y_1, y_2, r ^ b);
-    }
-    return ret;
-    
-  } else if (b != 0) {
-    // The leading coefficient is zero, so there are only two roots.
-    // This corresponds to the case the projecting line is tangent at the
-    // distinguished point (0:0:0:1).
-
-    // Make it monic.
-    c = ff2k_divi(c, b); d = ff2k_divi(d, b);
-    
-    for (int i = 0; i < 2; i++) {
-      unsigned y_3 = quadratic_roots[c][d][i];
-      if (y_3 == NULL_Fq_elt) break;
-      ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
-    }
-    return ret;
-    
-  } else if (c != 0) {
-    // The cubic degenerates to a linear polynomial.
-    return contribution_at_P3_point(y_0, y_1, y_2, ff2k_divi(d, c));    
-    
-  } else if (d == 0) {
-    // The cubic degenerates to the identically zero polynomial.
-    // That is, the fibre over the input point is an entire line.
-
-    // We loop over points on said line. (Except the distinguished points (0:0:0:1).)
-    for (unsigned y_3 = 0; y_3 < q; y_3++)
-      ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
-
-    return ret;
-    
-  } else {
-    // If we avoid all the clauses above, then 
-    // a = b = c = 0 and d != 0, so there are no roots and thus no contribution.
-    return 0;
-  }
-}
-
-bool Arf_invariant(unsigned X, unsigned Y, unsigned Z) {
-  unsigned XY = ff2k_mult(X, Y);
-  unsigned ZZ = ff2k_mult(Z, Z);
-  unsigned XYdivZZ = ff2k_divi(XY, ZZ);
-  return quadratic_roots[1][XYdivZZ][0] == NULL_Fq_elt;
-}
-
-*/
 
 // Arf_invariant(unsigned b, unsigned c)
 // 
@@ -334,3 +274,73 @@ unsigned* quadratic_roots(unsigned* f) {
   
   return roots;
 }
+
+/*
+// contribution_of_fibre_over_P2_point
+//
+// iterate over the three sheets of the quintic,
+// i.e. the three roots of a y_3^3 + b y_3^2 + c y_3 + d
+//
+// Use Cardano's formula to determine the roots of the cubic.
+// Then return the number of points on the singular conic associated to that root.
+//
+int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2) {
+  unsigned abcd; // coefficients of 3:1 cover, defined in coeffs.h
+
+  // iterate over the three sheets of the quintic,
+  // i.e. the three roots of a y_3^3 + b y_3^2 + c y_3 + d
+
+  int ret = 0;
+
+  if (a != 0) {
+    // The cubic is in fact a cubic.
+
+    // Make the cubic monic.
+    b = ff2k_divi(b, a); c = ff2k_divi(c, a); d = ff2k_divi(d, a);
+
+    // Make the cubic depressed.
+    unsigned s = ff2k_mult(b, b) ^ c, t = ff2k_mult(b, c) ^ d;
+    
+    for (int i = 0; i < 3; i++) {
+      unsigned r = depressed_cubic_roots[s][t][i];
+      if (r == NULL_Fq_elt) break;
+      ret += contribution_at_P3_point(y_0, y_1, y_2, r ^ b);
+    }
+    return ret;
+    
+  } else if (b != 0) {
+    // The leading coefficient is zero, so there are only two roots.
+    // This corresponds to the case the projecting line is tangent at the
+    // distinguished point (0:0:0:1).
+
+    // Make it monic.
+    c = ff2k_divi(c, b); d = ff2k_divi(d, b);
+    
+    for (int i = 0; i < 2; i++) {
+      unsigned y_3 = quadratic_roots[c][d][i];
+      if (y_3 == NULL_Fq_elt) break;
+      ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
+    }
+    return ret;
+    
+  } else if (c != 0) {
+    // The cubic degenerates to a linear polynomial.
+    return contribution_at_P3_point(y_0, y_1, y_2, ff2k_divi(d, c));    
+    
+  } else if (d == 0) {
+    // The cubic degenerates to the identically zero polynomial.
+    // That is, the fibre over the input point is an entire line.
+
+    // We loop over points on said line. (Except the distinguished points (0:0:0:1).)
+    for (unsigned y_3 = 0; y_3 < q; y_3++)
+      ret += contribution_at_P3_point(y_0, y_1, y_2, y_3);
+
+    return ret;
+    
+  } else {
+    // If we avoid all the clauses above, then 
+    // a = b = c = 0 and d != 0, so there are no roots and thus no contribution.
+    return 0;
+  }
+}
+*/

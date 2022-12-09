@@ -288,13 +288,70 @@ intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
     return newg, newcoeffs;
 end intrinsic;
 
+intrinsic ConicFibrationForCpp(cubic) -> SeqEnum
+{Determine a conic fibration of the cubic, obtained via projecting from a line,
+which is particularly amenable to input into C++. We require a the conic fibration 
+of the form
+    
+    Ax^2 + Bxy + Cy^2 + Dx + Ey + F so that
+
+such that the projection map (A : B : C) is the projection away from the distinguished 
+singular point on the discriminant.}
+
+    R<[x]> := Parent(cubic);
+    k := BaseRing(R);
+
+    g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);
+
+    // Find a point where A(p) = B(p) = C(p) = 0.
+    P3 := Proj(Parent(conicCoeffs[1]));
+    pt := Scheme(P3, conicCoeffs[1..3]);
+
+    // assert Dimension(pt) eq 0; // TODO: Figure out code for the rank degenerate case.
+
+    // If we are already in good coordinates, there is nothing to do.
+    pt := Random(RationalPoints(pt));
+    if Eltseq(pt) eq [0,0,0,1] then
+        return conicCoeffs;
+    end if;
+    
+    // Change coordinates so that pt = [0,0,0,1].
+    trafo := Translation(P3, P3 ! [0,0,0,1], P3 ! pt);
+    ABC := [Evaluate(Q, DefiningEquations(trafo)) : Q in conicCoeffs[1..3]];
+    
+    // Change coordinates so that A = y0, B = y1, C = y2.
+    mons1 := [P3.i : i in [1..4]];
+    mat := Matrix([[MonomialCoefficient(ll, m) : m in mons1] : ll in ABC] cat [[0,0,0,1]]);
+
+    E, U  := EchelonForm(Transpose(mat));
+    trafo := Automorphism(P3, U) * trafo;
+    
+    // Lift the transform to the cubic.
+    trafoLift := [Evaluate(eqn, x[1..4]) : eqn in DefiningEquations(trafo)] cat x[5..6];
+
+    // Compute new data.
+    newCoeffs := [Evaluate(Q, DefiningEquations(trafo)) : Q in conicCoeffs];    
+    newg := Evaluate(g, trafoLift);
+
+    // Check the transform.
+    // print conicCoeffs[1..3], newCoeffs[1..3];
+    assert Seqset(newCoeffs[1..3]) subset {0, P3.1, P3.2, P3.3};
+
+    // TODO: Need to force B=y1 in rank degenerate cases (if this is possible.)
+    assert newCoeffs[2] eq P3.2;
+    
+    // Return.
+    return newg, newCoeffs;
+end intrinsic;
+
+
 intrinsic ConicFibrationDiscriminant(conicCoeffs) -> RngMPol
 {}
     A, B, C, D, E, F := Explode(conicCoeffs);
     disc := C*D^2 + A*E^2 + F*B^2 + B*D*E;
     return disc;
 end intrinsic;
-                                                         
+
 intrinsic DiscriminantProjectionEquations(conicCoeffs) -> SeqEnum
 {}
     A, B, C, D, E, F := Explode(conicCoeffs);
@@ -424,9 +481,13 @@ intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11,
 
     // Now compute coefficients for the conic bundle fibration
     // that will be fed into C++ point counting code.
-    g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);           
+    if not CompileEachQ then
+        g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);           
+    else
+        g, conicCoeffs := ConicFibrationForCpp(cubic);
+    end if;
     discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
-
+        
     // If we have a cone, it is easier to count the points directly.
     if conicCoeffs[1..5] eq [0,0,0,0,0] then
         cc := PointCountsMagma(conicCoeffs[6] : Maxq:=Maxq);
