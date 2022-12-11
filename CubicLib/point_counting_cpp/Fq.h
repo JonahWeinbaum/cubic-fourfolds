@@ -358,23 +358,26 @@ int count_quartic_roots(ff2k_t* poly) {
 
 
 int count_poly_roots(unsigned* poly, int deg) {
-  // Probably should put this in the header file, so that the compiler can
-  // see that the degree is bounded by 4. Maybe even template this...
 
-  if (deg==1) {
-    if ((poly[deg] == 0) and (poly[0] == 0))
-      return q; // Identically zero
+  // Find the correct degree.
+  while (deg >= 0) {
+    if (poly[deg] == 0)
+      deg--;
     else
-      return (poly[deg] == 0);
+      break;
+  }
+
+  switch (deg) {
+  case  4: return count_quartic_roots(poly);   // Optimized routine for quartics.
+  case  2: return count_quadratic_roots(poly); // Optimized routine for quadratics.
+  case  1: return 1;
+  case  0: return 0;
+  case -1: return q; // Polynomial is identically zero.
   }
   
   // The key trick is to quickly compute the GCD with x^q-x, then check
   // the degree.
 
-  if (poly[deg] == 0) return count_poly_roots(poly, deg-1);
-  if (deg == 4) return count_quartic_roots(poly); // Optimized routine for quartics.
-
-  
   // Declare f. Note this mutates poly.
   const unsigned n = FINITEFIELDBITSIZE;
   unsigned* f = poly;
