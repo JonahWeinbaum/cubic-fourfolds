@@ -19,11 +19,13 @@ inline ff2k_t ff2k_mult(ff2k_t a, ff2k_t b) {
   uint64_t ab = C[0];
   
   // Reduce modulo the polynomial.
-  uint64_t pxi = (n > 1) ? (p << (n-2)) : p; // Should compile away.
+  uint64_t pxi = (n > 1) ? ((uint64_t)p << (n-2)) : p; // Should compile away.
+  uint64_t piv = (uint64_t)1 << (2*n - 2);
   for (int i = 2*n-2; i >= n; i--) {
     // If the i-th bit is 1, reduce by the polynomial.
-    if (ab & (1<<i)) ab ^= pxi;
+    if (ab & piv) ab ^= pxi;
     pxi = pxi >> 1;
+    piv = piv >> 1;
   }     
   return (ff2k_t)ab; 
 } 

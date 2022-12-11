@@ -59,6 +59,8 @@ int main() {
               << std::endl;
 
   } else {
+    std::clock_t cputime = std::clock();
+
     // Test Fq multiplication.
     for (unsigned i=0; i < (1 << 17); i++) {
       for (unsigned j=0; j<10000; j++) {
