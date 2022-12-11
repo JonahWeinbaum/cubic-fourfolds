@@ -4,6 +4,9 @@
 *.sage.py
 coeffs.h
 *.sig
+*.o
+*.DSYM
+*.exe
 example16.txt
 test_bigger
 fqtables
