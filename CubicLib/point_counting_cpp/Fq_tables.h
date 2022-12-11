@@ -184,7 +184,7 @@ all_table_t generate_Fq_tables(int n) {
                          mult, divi, orbit_rep, orbit_size);
 }
 
-
+/*
 // REMARK: For Conway polynomials, x always reduces to a primitive element. 
 int* log_table(int n) {
 
@@ -249,3 +249,4 @@ int* cubic_root_count_table(int n) {
   
   return cubic_table;
 }
+*/
