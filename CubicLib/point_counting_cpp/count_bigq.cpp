@@ -4,6 +4,7 @@
 #include <iostream>
 #include <tuple>
 #include <assert.h>
+//#include <omp.h>
 #include "tableio.h"
 #include "Fq_tables.h"
 

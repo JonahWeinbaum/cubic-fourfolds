@@ -109,6 +109,14 @@ unsigned reduce_cubic(uint64_t ab) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// Arf invariants
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // Polynomial root counting.
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,24 +186,130 @@ int gcd_degree(unsigned* A, unsigned* B, int dA, int dB) {
   return (degB < 0) ? degA : 0;
 }
 
+// TODO: Replace this with Arf invariants. 
+int count_poly_roots(ff2k_t*, int);
+
+int count_quadratic_roots(ff2k_t* poly) {
+  return count_poly_roots(poly, 2);
+}
+
+int count_quartic_roots(ff2k_t* poly) {
+  // The polynomial needs to be a genuine quartic.
+
+  const unsigned n = FINITEFIELDBITSIZE;
+  const int deg = 4;
+  
+  // Declare f. Note this mutates poly.
+  ff2k_t* f = poly;
+
+  // First we use a divisionless algorithm to make f depressed.
+  ff2k_t b = f[3];
+  ff2k_t d = f[1];
+
+  if (b != 0) {
+    // Multiply by b^4 and absorb.
+    ff2k_t bb   = ff2k_square(b);
+    ff2k_t bbb  = ff2k_mult(bb, b);
+    ff2k_t bbbb = ff2k_square(bb);
+    
+    f[3] = bb;
+    f[2] = ff2k_mult(f[2], bb);
+    f[1] = ff2k_mult(f[1], bbb);
+    f[0] = ff2k_mult(f[0], bbbb);
+
+    // Now shift by alpha = sqrt(b'/d') = sqrt(db).
+    ff2k_t alpha = ff2k_sqrt(ff2k_mult(b, d));
+
+    ff2k_t A0 = f[0];
+    ff2k_t powal = alpha;
+    for (int i=1; i<=4; i++) {
+      A0 ^= ff2k_mult(f[i], powal);
+      powal = ff2k_mult(powal, alpha);
+    }
+    ff2k_t A2 = f[2] ^ ff2k_mult(f[3], alpha);
+
+    // Compute x^4 * f(1/x + alpha).
+    f[0] = f[4];
+    f[1] = f[3];
+    f[2] = A2;
+    f[3] = 0;
+    f[4] = A0;
+
+    // TODO: XXX: It is possible that this counts alpha multiple times.
+    if (A0 == 0) return (1 + count_poly_roots(f, 2)); // alpha is a double root.
+  }
+  
+  // The key trick is to quickly compute the GCD with x^q-x, then check
+  // the degree.
+
+  make_monic_nodiv(f, deg);
+  
+  // q = 2^n.
+  // Compute x^q mod f(x). 
+  ff2k_t powx[3];
+  ff2k_t C = 0;
+  
+  // Initialize a couple steps into the loop.
+  if (n == 1) {
+    powx[0] = 0;
+    powx[1] = 0;
+    powx[2] = 1;
+    return gcd_degree(f, powx, 4, 2);
+  } else if (n==2) {
+    powx[0] = f[0];
+    powx[1] = f[1];
+    powx[2] = f[2];
+    return gcd_degree(f, powx, 4, 2);
+  } else {
+    powx[0] = f[0];
+    powx[1] = f[1];
+    powx[2] = f[2];
+  }
+  
+  // Square-Reduce loop
+  for (int i=2; i < n; i++) {
+
+    // Square, in characteristic 2.
+    C = ff2k_square(powx[2]);
+    powx[0] = ff2k_square(powx[0]);
+    powx[2] = ff2k_square(powx[1]);
+
+    // Reduce
+    powx[0] ^= ff2k_mult(C, f[0]);
+    powx[1]  = ff2k_mult(C, f[1]); // Note: squaring made powx[1] = 0. (Theoretically)
+    powx[2] ^= ff2k_mult(C, f[2]);    
+  }
+
+  // std::cout << powx[0] << " " << powx[1] << " " << powx[2] << " " << powx[3] << std::endl;
+  
+  // Subtract x
+  powx[1] ^= 1;
+
+  // Compute the GCD degree normally from this point.
+  return gcd_degree(f, powx, deg, deg-2);
+}
+
 
 int count_poly_roots(unsigned* poly, int deg) {
   // Probably should put this in the header file, so that the compiler can
   // see that the degree is bounded by 4. Maybe even template this...
 
   if (deg==1) {
-    if ((poly[deg] == 0) and (poly[0] == 0)) return q; // Identically zero
-    return (poly[deg] == 0);
+    if ((poly[deg] == 0) and (poly[0] == 0))
+      return q; // Identically zero
+    else
+      return (poly[deg] == 0);
   }
-
-  const unsigned n = FINITEFIELDBITSIZE;
   
   // The key trick is to quickly compute the GCD with x^q-x, then check
   // the degree.
 
   if (poly[deg] == 0) return count_poly_roots(poly, deg-1);
+  // if (deg == 4) return count_quartic_roots(poly); // Optimized routine for quartics.
 
+  
   // Declare f. Note this mutates poly.
+  const unsigned n = FINITEFIELDBITSIZE;
   unsigned* f = poly;
   make_monic_nodiv(f, deg);
   
