@@ -3,6 +3,7 @@
 #include <ctime>
 #include <iostream>
 #include <tuple>
+#include <assert.h>
 #include "tableio.h"
 #include "Fq_tables.h"
 
@@ -19,6 +20,8 @@ return 1;
 #endif
 
 // TODO: Update with Jonah's multiplication function, if it does OK.
+// TODO: Move these to Fq.h
+unsigned* quadratic_roots(unsigned* f);
 
 // function prototypes
 int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
@@ -98,7 +101,7 @@ int main(int argc, char **argv) {
    if (orbit_rep[y_2] == y_2)
      diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
   
-  // The contribution from the locus {A != 0, B != 0}. 
+  // The contribution from the locus {B != 0}. 
   // TODO: Artin-Schrier trickery should speed this up a lot...
   //       Main issue is how to make this compatible with conjugates...
   for (unsigned y_1 = 0; y_1 < q; y_1++)
@@ -108,9 +111,9 @@ int main(int argc, char **argv) {
       }
 
   // The contribution from the locus {A = 0, B != 0}.
-  for (unsigned y_2 = 0; y_2 < q; y_2++)
-   if (orbit_rep[y_2] == y_2)
-     diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
+  // for (unsigned y_2 = 0; y_2 < q; y_2++)
+  //  if (orbit_rep[y_2] == y_2)
+  //   diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
 
   
   std::cerr << "Iterate time: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
@@ -131,50 +134,86 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   // the degree is higher, the Arf invariant is *constant* along the fibres. Thus,
   // we need only determine the number of roots lying over a given point.
 
-  // Define ABC
-  
-  // TODO: If B is identically zero, then we have an issue.
-
-  
-  // TODO: We should only ever call this function when the arf invariant is 1.
-  int arf=0;
-  if (y_1 == 1) {
-    arf = Arf_invariant_mu2(y_0, y_1, y_2);
-  } else {
-    //   1. Determine A, C, D, E.
-    //   2. Compute the roots of the right quadratic equation.
-    //      (Delta=0, B=0 causes factorization).
-    //   3. Compute the Arf invariant of the resulting expression.
-
-    unsigned ABCDEF; // Dammit...DEF depend on y_3.
-
-    // Need sqrt A, sqrt C.
-    unsigned sqrtA = ff2k_sqrt(A);
-    unsigned sqrtC = ff2k_sqrt(C);
-
-    // The correct quadratic is (sqrt(C) * D + sqrt(A) * E).
-    
-    unsigned* rts = quadratic_roots();
-    
-    throw std::runtime_error("Not implemented.");
-  }
-  
   unsigned abcde; // coefficients of 4:1 cover, defined in coeffs.h
   unsigned f[] = {e,d,c,b,a};
 
-  return arf * count_poly_roots(f, 4);
-}
+  // TODO: If B is identically zero, then we have an issue.
+  // Otherwise, we are OK.
+  
+  if (y_1 == 1) {
+    int arf = Arf_invariant_mu2(y_0, y_1, y_2);
+    return arf * count_poly_roots(f, 4);
+  }
 
-// contribution_of_fibre_over_point_at_infinity() {
-// }
+  if (y_1 != 0) throw std::invalid_argument("Function called with y_1 not either 0 or 1.");
+    
+  // Once y_1 = 0, theory guarantees that b = d = 0. Sanity check.
+  assert((b == 0) && (d==0));
+
+  // Our quadratic is now a(z^2)^2 + c(z^2) + e. We can solve for the roots.
+  if (a != 0) {
+    unsigned g[] = {e, c, a};
+    unsigned* rts = quadratic_roots(g);
+
+    int ret = 0;
+    for (int i=1; i <= rts[0]; i++) {
+      ret += contribution_at_P3_point(y_0, y_1, y_2, ff2k_sqrt(rts[i]));
+    }
+    
+    free(rts); // Cleanup.
+    return ret;
+
+  } else if (c != 0) {
+    // Exactly one root.
+    unsigned sy0 = ff2k_mult(y_0, c);
+    unsigned sy1 = 0;                 // Because y_1 = 0.
+    unsigned sy2 = ff2k_mult(y_2, c);
+    unsigned sy3 = e;                 // The root, scaled.
+    
+    return contribution_at_P3_point(sy0, sy1, sy2, sy3);
+    
+  } else if (e != 0) {
+    // Nothing is a root.
+    return 0;
+    
+  } else {
+    // Everything is a root.
+    int ret = 0;
+    for (int i=0; i<q; i++) {
+      ret += contribution_at_P3_point(y_0, y_1, y_2, i);
+    }
+    return ret;
+  }
+
+}
 
 
 // Arf_invariant(unsigned b, unsigned c)
 // 
 // Given a quadratic polynomial ax^2 + bx + c with b != 0, determine the
 // Arf invariant (Equal to 0 or 1).
+//
 int Arf_invariant(unsigned a, unsigned b, unsigned c) {
+  const unsigned n = FINITEFIELDBITSIZE;
+  const unsigned* trace_basis = trace_bases[n];
+  const unsigned* pretrace_basis = pretrace_bases[n];
 
+  unsigned binv2 = ff2k_square(ff2k_inv(b));
+  unsigned acbb  = ff2k_mult(ff2k_mult(a, c), binv2);
+  unsigned pivot = (1 << (n-1));
+  
+  for (int i = 0; i < n-1; i++) {
+    if (acbb & trace_basis[i]) {
+       acbb ^= trace_basis[i];
+    }
+  }
+
+  // The trace is zero if and only if what remains is zero.
+  return (int)(acbb != 0);
+}
+
+/*
+int Arf_invariant(unsigned a, unsigned b, unsigned c) {
   const int n = FINITEFIELDBITSIZE;
   
   // Use the well-known fact that Arf(a,b,c) = tr(ac/b^2).
@@ -189,6 +228,7 @@ int Arf_invariant(unsigned a, unsigned b, unsigned c) {
   }
   return (int)tr;  
 }
+*/
 
 int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
   return Arf_invariant(X, Y, Z) == 1 ? -1 : 1;
@@ -216,21 +256,15 @@ int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned 
     return 0;
 
   // The conic is rank 2. We look at Arf invariants.
-  if (A == 0 && B == 0 && C == 0) {
+  if (A == 0 && B == 0 && C == 0)
     return 1; // The conic is indeed split.
-  }
-
-  // We should never run into this case.
-  throw std::runtime_error("Not implemented past this point.");
-
-  /*
   if (B != 0)
-    return Arf_invariant_mu2(A, C, B);
+    return Arf_invariant_mu2(A, B, C);
   if (D != 0)
-    return Arf_invariant_mu2(A, F, D);
+    return Arf_invariant_mu2(A, D, F);
   if (E != 0)
-    return Arf_invariant_mu2(C, F, E);
-  */
+    return Arf_invariant_mu2(C, E, F);
+
   
   // We should never run into this case.
   throw std::runtime_error("Conic is not singular.");
@@ -242,6 +276,7 @@ unsigned* quadratic_roots(unsigned* f) {
   // of distinct roots. The remaining values are the actual roots.
   //
   // It is assumed that f is genuinely a quadratic.
+  const int n = FINITEFIELDBITSIZE;
   
   // ax^2 + bx + c.
   unsigned c = f[0];
@@ -255,13 +290,13 @@ unsigned* quadratic_roots(unsigned* f) {
   }
 
   if (a==0) {
-    throw std::runtime_error("Function called with bad arguments.");
+    throw std::invalid_argument("Leading coefficient must be non-zero.");
   }
   
   if (b==0) {
     // The quadratic has a double root.
     roots[0] = 1;
-    roots[1] = ff2k_divi(c, a);
+    roots[1] = ff2k_sqrt(ff2k_divi(c, a));
     return roots;
   }
 
@@ -269,10 +304,31 @@ unsigned* quadratic_roots(unsigned* f) {
   // For this, we use linear algebra.
   
   unsigned acbb = ff2k_divi(ff2k_mult(a, c), ff2k_square(b));
-
-
+  unsigned pivot = (1 << (n-1));
+  unsigned rt = 0;
+  const unsigned* trace_basis = trace_bases[n];
+  const unsigned* pretrace_basis = pretrace_bases[n];
   
-  return roots;
+  for (int i = 0; i < n-1; i++) {
+    if (acbb & trace_basis[i]) {
+       rt ^= pretrace_basis[i];
+       acbb ^= trace_basis[i];
+    }    
+    pivot >>= 1;
+  }
+
+  // The only thing left at the end of the loop should be the trace.
+  if (acbb != 0)
+    return roots;
+  else {
+    // z^2 + z + ac/b^2 =>  ax = bz
+    unsigned bdiva = ff2k_divi(b, a);
+    rt = ff2k_mult(rt, bdiva);
+    roots[0] = 2;
+    roots[1] = rt;
+    roots[2] = rt ^ bdiva;
+    return roots;
+  }
 }
 
 /*
