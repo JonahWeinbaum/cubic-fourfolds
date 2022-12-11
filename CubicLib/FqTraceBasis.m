@@ -41,7 +41,7 @@ end function;
 function generateCppTraceBases()
 
     ptvs := []; // Pretrace values
-    tbs  := []; // Trace basis
+    tbs  := [];
     for i in [1..22] do
         tb, b := TraceBasis(GF(2^i));
         cppb := [CppRep(x) : x in b];
@@ -51,5 +51,6 @@ function generateCppTraceBases()
         tbs[i] := cpptb;
     end for;
 
-    return tbs, ptvs;
+    // Note the placeholder. C is 0-indexed.
+    return [[0]] cat tbs, [[0]] cat ptvs;
 end function;

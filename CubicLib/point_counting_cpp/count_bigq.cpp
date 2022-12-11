@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   //
   // In order to compute diff, we project away from a particular point on Delta (assumed to
   // be at (0:0:0:1)). This projection is further assumed to be given by (A : B : C).
-  // In other words, that the Arf in variant is *constant along fibres*!
+  // In other words, that the Arf invariant is *constant along fibres*!
   // 
   // This gives Delta the structure of a generically 4:1 cover of P2.
   //
