@@ -28,10 +28,11 @@ int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
 int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
 int Arf_invariant(unsigned, unsigned, unsigned);
 int Arf_invariant_mu2(unsigned, unsigned, unsigned);
-
+int Arf_factor(unsigned, unsigned, unsigned);
+int Arf_factor(unsigned, unsigned);
 
 // TODO: Perhaps move to Fq.h
-unsigned* quadratic_roots(unsigned*);
+unsigned* quadratic_roots(unsigned*, unsigned*);
 
 int main(int argc, char **argv) {
 
@@ -102,19 +103,11 @@ int main(int argc, char **argv) {
      diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
   
   // The contribution from the locus {B != 0}. 
-  // TODO: Artin-Schrier trickery should speed this up a lot...
-  //       Main issue is how to make this compatible with conjugates...
   for (unsigned y_1 = 0; y_1 < q; y_1++)
     if (orbit_rep[y_1] == y_1)
       for (unsigned y_2 = 0; y_2 < q; y_2++) {
         diff += contribution_of_fibre_over_P2_point(y_1, 1, y_2) * orbit_size[y_1];
       }
-
-  // The contribution from the locus {A = 0, B != 0}.
-  // for (unsigned y_2 = 0; y_2 < q; y_2++)
-  //  if (orbit_rep[y_2] == y_2)
-  //   diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
-
   
   std::cerr << "Iterate time: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
             << std::endl;
@@ -141,7 +134,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   // Otherwise, we are OK.
   
   if (y_1 == 1) {
-    int arf = Arf_invariant_mu2(y_0, y_1, y_2);
+    int arf = Arf_factor(y_0, y_2);
     return arf * count_poly_roots(f, 4);
   }
 
@@ -153,14 +146,15 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   // Our quadratic is now a(z^2)^2 + c(z^2) + e. We can solve for the roots.
   if (a != 0) {
     unsigned g[] = {e, c, a};
-    unsigned* rts = quadratic_roots(g);
+    unsigned rts[3] = {0,0,0};
+    quadratic_roots(g, rts);
 
     int ret = 0;
     for (int i=1; i <= rts[0]; i++) {
       ret += contribution_at_P3_point(y_0, y_1, y_2, ff2k_sqrt(rts[i]));
     }
     
-    free(rts); // Cleanup.
+    // free(rts); // Cleanup.
     return ret;
 
   } else if (c != 0) {
@@ -200,7 +194,6 @@ int Arf_invariant(unsigned a, unsigned b, unsigned c) {
 
   unsigned binv2 = ff2k_square(ff2k_inv(b));
   unsigned acbb  = ff2k_mult(ff2k_mult(a, c), binv2);
-  unsigned pivot = (1 << (n-1));
   
   for (int i = 0; i < n-1; i++) {
     if (acbb & trace_basis[i]) {
@@ -212,28 +205,32 @@ int Arf_invariant(unsigned a, unsigned b, unsigned c) {
   return (int)(acbb != 0);
 }
 
-/*
-int Arf_invariant(unsigned a, unsigned b, unsigned c) {
-  const int n = FINITEFIELDBITSIZE;
-  
-  // Use the well-known fact that Arf(a,b,c) = tr(ac/b^2).
-  unsigned binv2 = ff2k_square(ff2k_inv(b));
-  unsigned acbb  = ff2k_mult(ff2k_mult(a, c), binv2);
-  unsigned pow   = acbb;
-  unsigned tr    = 0;
-  
-  for (int i=0; i < n; i++) {
-    tr ^= pow;
-    pow = ff2k_square(pow);
-  }
-  return (int)tr;  
-}
-*/
 
 int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
   return Arf_invariant(X, Y, Z) == 1 ? -1 : 1;
 }
 
+int Arf_factor(unsigned a, unsigned b, unsigned c) {
+  return Arf_invariant(a, b, c) == 1 ? -1 : 1;
+}
+
+// In the special case b=1, we save a few operations.
+int Arf_factor(unsigned a, unsigned c) {
+  const unsigned n = FINITEFIELDBITSIZE;
+  const unsigned* trace_basis = trace_bases[n];
+  const unsigned* pretrace_basis = pretrace_bases[n];
+
+  unsigned acbb  = ff2k_mult(a, c);
+  
+  for (int i = 0; i < n-1; i++) {
+    if (acbb & trace_basis[i]) {
+       acbb ^= trace_basis[i];
+    }
+  }
+
+  // The trace is zero if and only if what remains is zero.
+  return (acbb != 0) ? -1 : 1;
+}
 
 // contribution_at_P3_point (Should be named "points on parametrized conic" or something.)
 //
@@ -271,7 +268,7 @@ int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned 
 }
 
 
-unsigned* quadratic_roots(unsigned* f) {
+unsigned* quadratic_roots(unsigned* f, unsigned* roots) {
   // Return an array {n, r1, r2}. The first number indicates the number
   // of distinct roots. The remaining values are the actual roots.
   //
@@ -282,12 +279,6 @@ unsigned* quadratic_roots(unsigned* f) {
   unsigned c = f[0];
   unsigned b = f[1];
   unsigned a = f[2];
-
-  unsigned* roots = (unsigned*) malloc(3*sizeof(unsigned));
-
-  for (int i=0; i<3; i++) {
-    roots[i] = 0;
-  }
 
   if (a==0) {
     throw std::invalid_argument("Leading coefficient must be non-zero.");
