@@ -309,10 +309,8 @@ int count_quartic_roots(ff2k_t* poly) {
       // We count out the multiplicity and use generic functionality on what remains.
       if (A2 == 0)
         return 2; // NOTE: f[3] != 0 since b != 0. Thus alpha is a triple root.
-      else {
+      else
         return (1 + count_quadratic_roots(f)); // alpha is a double root.
-        // return (1 + count_poly_roots(f, 2)); // alpha is a double root.
-      }
     }
   }
   
@@ -351,8 +349,6 @@ int count_quartic_roots(ff2k_t* poly) {
     powx[2] ^= ff2k_mult(C, f[2]);    
   }
 
-  // std::cout << powx[0] << " " << powx[1] << " " << powx[2] << " " << powx[3] << std::endl;
-  
   // Subtract x
   powx[1] ^= 1;
 
