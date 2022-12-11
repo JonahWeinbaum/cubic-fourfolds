@@ -44,7 +44,6 @@ inline unsigned ff2k_divi(unsigned a, unsigned b) {
 // function prototypes
 int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
 int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
-void print_it(unsigned);
 
 
 int main(int argc, char **argv) {

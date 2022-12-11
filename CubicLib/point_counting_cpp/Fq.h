@@ -113,11 +113,49 @@ unsigned reduce_cubic(uint64_t ab) {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+// In the special case b=1, we save a few operations.
+int Arf_invariant_b_equals_1(unsigned a, unsigned c) {
+  const unsigned  n = FINITEFIELDBITSIZE;
+  const unsigned* trace_basis = trace_bases[n];
+  const unsigned* pretrace_basis = pretrace_bases[n];
+
+  unsigned acbb  = ff2k_mult(a, c);
+  
+  for (int i = 0; i < n-1; i++) {
+    if (acbb & trace_basis[i]) {
+       acbb ^= trace_basis[i];
+    }
+  }
+
+  // The trace is zero if and only if what remains is zero.
+  return (int)(acbb != 0);
+}
+
+// Arf_invariant(unsigned a, unsigned b, unsigned c)
+// 
+// Given a quadratic polynomial ax^2 + bx + c with b != 0, determine the
+// Arf invariant (Equal to 0 or 1).
+//
+int Arf_invariant(unsigned a, unsigned b, unsigned c) {
+  
+  unsigned binv2 = ff2k_square(ff2k_inv(b));
+  unsigned acbb  = ff2k_mult(ff2k_mult(a, c), binv2);
+
+  return Arf_invariant_b_equals_1(1, acbb);
+}
+
+int Arf_invariant_mu2_b_equals_1(unsigned a, unsigned c) {
+  return Arf_invariant_b_equals_1(a, c) == 1 ? -1 : 1;
+}
+
+int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
+  return Arf_invariant(X, Y, Z) == 1 ? -1 : 1;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Polynomial root counting.
+// Polynomial utilities.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -186,12 +224,42 @@ int gcd_degree(unsigned* A, unsigned* B, int dA, int dB) {
   return (degB < 0) ? degA : 0;
 }
 
-// TODO: Replace this with Arf invariants. 
-int count_poly_roots(ff2k_t*, int);
 
-int count_quadratic_roots(ff2k_t* poly) {
-  return count_poly_roots(poly, 2);
+////////////////////////////////////////////////////////////////////////////////
+//
+// Polynomial root counting.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+int count_poly_roots(unsigned* f, int deg);
+
+int count_quadratic_roots(unsigned* f) {
+  // Return an array {n, r1, r2}. The first number indicates the number
+  // of distinct roots. The remaining values are the actual roots.
+  //
+  // It is assumed that f is genuinely a quadratic.
+  const int n = FINITEFIELDBITSIZE;
+  
+  // ax^2 + bx + c.
+  unsigned c = f[0];
+  unsigned b = f[1];
+  unsigned a = f[2];
+
+  if (a==0)
+    throw std::invalid_argument("Leading coefficient must be non-zero.");
+  
+  if (b==0) return 1;  // The quadratic has a double root.
+
+  int arf = Arf_invariant(f[2], f[1], f[0]);
+
+  if (!(arf == 0 || arf == 1)) {
+    std::cerr << arf << std::endl;
+    std::cerr << (int)(2 != 0) << std::endl;
+    assert(arf == 0 || arf == 1);
+  }
+  return (arf ^ 1) << 1;
 }
+
 
 int count_quartic_roots(ff2k_t* poly) {
   // The polynomial needs to be a genuine quartic.
@@ -241,8 +309,10 @@ int count_quartic_roots(ff2k_t* poly) {
       // We count out the multiplicity and use generic functionality on what remains.
       if (A2 == 0)
         return 2; // NOTE: f[3] != 0 since b != 0. Thus alpha is a triple root.
-      else
-        return (1 + count_poly_roots(f, 2)); // alpha is a double root.
+      else {
+        return (1 + count_quadratic_roots(f)); // alpha is a double root.
+        // return (1 + count_poly_roots(f, 2)); // alpha is a double root.
+      }
     }
   }
   
@@ -360,4 +430,65 @@ int count_poly_roots(unsigned* poly, int deg) {
 
   // Compute the GCD degree normally from this point.
   return gcd_degree(f, powx, deg, deg-1);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Polynomial root finding.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+unsigned* quadratic_roots(unsigned* f, unsigned* roots) {
+  // Return an array {n, r1, r2}. The first number indicates the number
+  // of distinct roots. The remaining values are the actual roots.
+  //
+  // It is assumed that f is genuinely a quadratic.
+  const int n = FINITEFIELDBITSIZE;
+  
+  // ax^2 + bx + c.
+  unsigned c = f[0];
+  unsigned b = f[1];
+  unsigned a = f[2];
+
+  if (a==0) {
+    throw std::invalid_argument("Leading coefficient must be non-zero.");
+  }
+  
+  if (b==0) {
+    // The quadratic has a double root.
+    roots[0] = 1;
+    roots[1] = ff2k_sqrt(ff2k_divi(c, a));
+    return roots;
+  }
+
+  // First, compute the roots of z^2 + z + ac/b^2.
+  // For this, we use linear algebra.
+  
+  unsigned acbb = ff2k_divi(ff2k_mult(a, c), ff2k_square(b));
+  unsigned pivot = (1 << (n-1));
+  unsigned rt = 0;
+  const unsigned* trace_basis = trace_bases[n];
+  const unsigned* pretrace_basis = pretrace_bases[n];
+  
+  for (int i = 0; i < n-1; i++) {
+    if (acbb & trace_basis[i]) {
+       rt ^= pretrace_basis[i];
+       acbb ^= trace_basis[i];
+    }    
+    pivot >>= 1;
+  }
+
+  // The only thing left at the end of the loop should be the trace.
+  if (acbb != 0)
+    return roots;
+  else {
+    // z^2 + z + ac/b^2 =>  ax = bz
+    unsigned bdiva = ff2k_divi(b, a);
+    rt = ff2k_mult(rt, bdiva);
+    roots[0] = 2;
+    roots[1] = rt;
+    roots[2] = rt ^ bdiva;
+    return roots;
+  }
 }

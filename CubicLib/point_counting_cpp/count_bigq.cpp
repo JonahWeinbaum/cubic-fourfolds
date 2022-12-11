@@ -27,13 +27,7 @@ unsigned* quadratic_roots(unsigned* f);
 // function prototypes
 int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);
 int contribution_of_fibre_over_P2_point(unsigned, unsigned, unsigned);
-int Arf_invariant(unsigned, unsigned, unsigned);
-int Arf_invariant_mu2(unsigned, unsigned, unsigned);
-int Arf_factor(unsigned, unsigned, unsigned);
-int Arf_factor(unsigned, unsigned);
 
-// TODO: Perhaps move to Fq.h
-unsigned* quadratic_roots(unsigned*, unsigned*);
 
 int main(int argc, char **argv) {
 
@@ -135,7 +129,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   // Otherwise, we are OK.
   
   if (y_1 == 1) {
-    int arf = Arf_factor(y_0, y_2);
+    int arf = Arf_invariant_mu2_b_equals_1(y_0, y_2);
     return arf * count_poly_roots(f, 4);
   }
 
@@ -183,56 +177,6 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
 }
 
 
-// Arf_invariant(unsigned b, unsigned c)
-// 
-// Given a quadratic polynomial ax^2 + bx + c with b != 0, determine the
-// Arf invariant (Equal to 0 or 1).
-//
-int Arf_invariant(unsigned a, unsigned b, unsigned c) {
-  const unsigned n = FINITEFIELDBITSIZE;
-  const unsigned* trace_basis = trace_bases[n];
-  const unsigned* pretrace_basis = pretrace_bases[n];
-
-  unsigned binv2 = ff2k_square(ff2k_inv(b));
-  unsigned acbb  = ff2k_mult(ff2k_mult(a, c), binv2);
-  
-  for (int i = 0; i < n-1; i++) {
-    if (acbb & trace_basis[i]) {
-       acbb ^= trace_basis[i];
-    }
-  }
-
-  // The trace is zero if and only if what remains is zero.
-  return (int)(acbb != 0);
-}
-
-
-int Arf_invariant_mu2(unsigned X, unsigned Y, unsigned Z) {
-  return Arf_invariant(X, Y, Z) == 1 ? -1 : 1;
-}
-
-int Arf_factor(unsigned a, unsigned b, unsigned c) {
-  return Arf_invariant(a, b, c) == 1 ? -1 : 1;
-}
-
-// In the special case b=1, we save a few operations.
-int Arf_factor(unsigned a, unsigned c) {
-  const unsigned n = FINITEFIELDBITSIZE;
-  const unsigned* trace_basis = trace_bases[n];
-  const unsigned* pretrace_basis = pretrace_bases[n];
-
-  unsigned acbb  = ff2k_mult(a, c);
-  
-  for (int i = 0; i < n-1; i++) {
-    if (acbb & trace_basis[i]) {
-       acbb ^= trace_basis[i];
-    }
-  }
-
-  // The trace is zero if and only if what remains is zero.
-  return (acbb != 0) ? -1 : 1;
-}
-
 // contribution_at_P3_point (Should be named "points on parametrized conic" or something.)
 //
 // Determines how many points are on the double cover
@@ -269,59 +213,6 @@ int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned 
 }
 
 
-unsigned* quadratic_roots(unsigned* f, unsigned* roots) {
-  // Return an array {n, r1, r2}. The first number indicates the number
-  // of distinct roots. The remaining values are the actual roots.
-  //
-  // It is assumed that f is genuinely a quadratic.
-  const int n = FINITEFIELDBITSIZE;
-  
-  // ax^2 + bx + c.
-  unsigned c = f[0];
-  unsigned b = f[1];
-  unsigned a = f[2];
-
-  if (a==0) {
-    throw std::invalid_argument("Leading coefficient must be non-zero.");
-  }
-  
-  if (b==0) {
-    // The quadratic has a double root.
-    roots[0] = 1;
-    roots[1] = ff2k_sqrt(ff2k_divi(c, a));
-    return roots;
-  }
-
-  // First, compute the roots of z^2 + z + ac/b^2.
-  // For this, we use linear algebra.
-  
-  unsigned acbb = ff2k_divi(ff2k_mult(a, c), ff2k_square(b));
-  unsigned pivot = (1 << (n-1));
-  unsigned rt = 0;
-  const unsigned* trace_basis = trace_bases[n];
-  const unsigned* pretrace_basis = pretrace_bases[n];
-  
-  for (int i = 0; i < n-1; i++) {
-    if (acbb & trace_basis[i]) {
-       rt ^= pretrace_basis[i];
-       acbb ^= trace_basis[i];
-    }    
-    pivot >>= 1;
-  }
-
-  // The only thing left at the end of the loop should be the trace.
-  if (acbb != 0)
-    return roots;
-  else {
-    // z^2 + z + ac/b^2 =>  ax = bz
-    unsigned bdiva = ff2k_divi(b, a);
-    rt = ff2k_mult(rt, bdiva);
-    roots[0] = 2;
-    roots[1] = rt;
-    roots[2] = rt ^ bdiva;
-    return roots;
-  }
-}
 
 /*
 // contribution_of_fibre_over_P2_point
