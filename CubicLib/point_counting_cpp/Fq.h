@@ -235,8 +235,15 @@ int count_quartic_roots(ff2k_t* poly) {
     f[3] = 0;
     f[4] = A0;
 
-    // TODO: XXX: It is possible that this counts alpha multiple times.
-    if (A0 == 0) return (1 + count_poly_roots(f, 2)); // alpha is a double root.
+    if (A0 == 0) {
+      // The polynomial A0 + A2 x^2 + f[3] x^3 + f[4] x^4 has alpha as a root.
+      //
+      // We count out the multiplicity and use generic functionality on what remains.
+      if (A2 == 0)
+        return 2; // NOTE: f[3] != 0 since b != 0. Thus alpha is a triple root.
+      else
+        return (1 + count_poly_roots(f, 2)); // alpha is a double root.
+    }
   }
   
   // The key trick is to quickly compute the GCD with x^q-x, then check
@@ -254,12 +261,6 @@ int count_quartic_roots(ff2k_t* poly) {
     powx[0] = 0;
     powx[1] = 0;
     powx[2] = 1;
-    return gcd_degree(f, powx, 4, 2);
-  } else if (n==2) {
-    powx[0] = f[0];
-    powx[1] = f[1];
-    powx[2] = f[2];
-    return gcd_degree(f, powx, 4, 2);
   } else {
     powx[0] = f[0];
     powx[1] = f[1];
@@ -305,7 +306,7 @@ int count_poly_roots(unsigned* poly, int deg) {
   // the degree.
 
   if (poly[deg] == 0) return count_poly_roots(poly, deg-1);
-  // if (deg == 4) return count_quartic_roots(poly); // Optimized routine for quartics.
+  if (deg == 4) return count_quartic_roots(poly); // Optimized routine for quartics.
 
   
   // Declare f. Note this mutates poly.
