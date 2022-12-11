@@ -11,16 +11,36 @@
 #else
 #include "constants.h" // Already included in Fq.h
 
-// Prototypes
-unsigned ff2k_mult(unsigned a, unsigned b);
-unsigned ff2k_divi(unsigned a, unsigned b);
+// Global lookup tables for multiplication/division.
+unsigned **mult, **divi,
+
+  ***quadratic_roots,
+  // quadratic_roots[i][a][b] is
+  // the i'th root of x^2 + ax + b, 
+  // or q if we're out of roots
+
+  ***depressed_cubic_roots;
+  // depressed_cubic_roots[i][s][t] is
+  // the i'th root of x^3 + sx + t,
+  // or q if we're out of roots
+
+
+
+inline unsigned ff2k_mult(unsigned a, unsigned b) {
+  return mult[a][b];
+}
+
+inline unsigned ff2k_divi(unsigned a, unsigned b) {
+  return divi[a][b];
+}
 
 // Square
 inline unsigned ff2k_square(unsigned a) {
   return ff2k_mult(a, a);
 }
 
-#endif
+#endif //////////////////
+
 
 std::tuple<unsigned*, unsigned*> generate_orbit_tables(int n) {
 

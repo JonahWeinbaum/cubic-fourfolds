@@ -14,31 +14,7 @@
 
 // we're in F_q. On a modern machine we can assume 32 or 64 bit integers.
 unsigned q;
-//const unsigned PLACEHOLDER_Fq_elt = 1 << 16;
 unsigned NULL_Fq_elt;
-
-// lookup tables
-unsigned **mult, **divi,
-
-  ***quadratic_roots,
-  // quadratic_roots[i][a][b] is
-  // the i'th root of x^2 + ax + b, 
-  // or q if we're out of roots
-
-  ***depressed_cubic_roots;
-  // depressed_cubic_roots[i][s][t] is
-  // the i'th root of x^3 + sx + t,
-  // or q if we're out of roots
-
-
-
-inline unsigned ff2k_mult(unsigned a, unsigned b) {
-  return mult[a][b];
-}
-
-inline unsigned ff2k_divi(unsigned a, unsigned b) {
-  return divi[a][b];
-}
 
 
 // function prototypes
