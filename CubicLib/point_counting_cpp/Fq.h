@@ -11,8 +11,7 @@ int initialized_ff_bitsize() {
 #ifndef ARM
 #include <wmmintrin.h>
 
-inline ff2k_t ff2k_mult(ff2k_t a, ff2k_t b)
-{
+inline ff2k_t ff2k_mult(ff2k_t a, ff2k_t b) {
   const unsigned n = FINITEFIELDBITSIZE;
   __m128i A, B, C;
   A[0]=a; B[0] = b;
@@ -20,7 +19,7 @@ inline ff2k_t ff2k_mult(ff2k_t a, ff2k_t b)
   ff2k_t ab = (ff2k_t)C[0];
   
   // Reduce modulo the polynomial.
-  ff2k_t pxi = n > 1 ? (p << (n-2)) : p; // Should compile away.
+  ff2k_t pxi = (n > 1) ? (p << (n-2)) : p; // Should compile away.
   for (int i = 2*n-2; i >= n; i--) {
     // If the i-th bit is 1, reduce by the polynomial.
     if (ab & (1<<i)) ab ^= pxi;
@@ -30,15 +29,32 @@ inline ff2k_t ff2k_mult(ff2k_t a, ff2k_t b)
 } 
 
 // For evaluating complicated polynomials it can help to delay reduction.
-static inline uint64_t _ff2k_pclmul_delred(unsigned a, unsigned b)
-{
+static inline uint64_t _ff2k_mult_delay_reduction(unsigned a, unsigned b) {
   __m128i A, B, C;
   A[0]=a; B[0] = b;
   C = _mm_clmulepi64_si128 (A,B,0);
   return C[0];  
-} 
+}
 
-#else
+static inline uint64_t _ff2k_reduce(ff2k_t a) {
+  const unsigned n = FINITEFIELDBITSIZE;
+  
+  // Reduce modulo the polynomial.
+  ff2k_t pxi = (n > 1) ? (p << (n-2)) : p; // Should compile away.
+  for (int i = 2*n-2; i >= n; i--) {
+    // If the i-th bit is 1, reduce by the polynomial.
+    if (a & (1<<i)) a ^= pxi;
+    pxi = pxi >> 1;
+  }     
+  return a;
+}
+
+inline ff2k_t _ff2k_square_delay_reduction(ff2k_t a) {
+  return _ff2k_mult_delay_reduction(a, a);
+}
+
+
+#else // Don't use the Intel instructions.
 
 ff2k_t ff2k_mult(ff2k_t x, ff2k_t y) {
   // Stock multiplication algorithm.
@@ -57,7 +73,21 @@ ff2k_t ff2k_mult(ff2k_t x, ff2k_t y) {
 
   return ab;
 }
-#endif
+
+// For evaluating complicated polynomials it can help to delay reduction.
+static inline uint64_t _ff2k_mult_delay_reduction(unsigned a, unsigned b) {
+  return ff2k_mult(a, b); 
+}
+
+static inline uint64_t _ff2k_reduce(ff2k_t a) {
+  return a;
+}
+
+inline ff2k_t _ff2k_square_delay_reduction(ff2k_t a) {
+  return a;
+}
+
+#endif /////////// End ARM chip check
 
 inline ff2k_t ff2k_square(ff2k_t a) {
   return ff2k_mult(a, a);
@@ -340,6 +370,21 @@ int count_quartic_roots(ff2k_t* poly) {
 
     // Square, in characteristic 2.
     C = ff2k_square(powx[2]);
+    powx[0] = _ff2k_square_delay_reduction(powx[0]);
+    powx[2] = _ff2k_square_delay_reduction(powx[1]);
+
+    // Reduce (the polynomial)
+    powx[0] ^= _ff2k_mult_delay_reduction(C, f[0]);
+    powx[1]  = ff2k_mult(C, f[1]); // Note: squaring made powx[1] = 0. (Theoretically)
+    powx[2] ^= _ff2k_mult_delay_reduction(C, f[2]);    
+
+    // Reduce the numbers
+    powx[0] = _ff2k_reduce(powx[0]);
+    powx[2] = _ff2k_reduce(powx[2]);
+    
+    /*
+    // Square, in characteristic 2.
+    C = ff2k_square(powx[2]);
     powx[0] = ff2k_square(powx[0]);
     powx[2] = ff2k_square(powx[1]);
 
@@ -347,6 +392,7 @@ int count_quartic_roots(ff2k_t* poly) {
     powx[0] ^= ff2k_mult(C, f[0]);
     powx[1]  = ff2k_mult(C, f[1]); // Note: squaring made powx[1] = 0. (Theoretically)
     powx[2] ^= ff2k_mult(C, f[2]);    
+    */
   }
 
   // Subtract x
