@@ -43,6 +43,7 @@ function TraceBasis(k)
             perm2 := [(i+1)..d] cat [i];
             P := PermutationMatrix(BaseField(k), perm1 cat perm2)^(-1);
             U := P*U;
+            break;
         end if;
     end for;
     
