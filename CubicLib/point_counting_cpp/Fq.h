@@ -493,7 +493,7 @@ unsigned* quadratic_roots(unsigned* f, unsigned* roots) {
   //
   // It is assumed that f is genuinely a quadratic.
   const int n = FINITEFIELDBITSIZE;
-  
+
   // ax^2 + bx + c.
   unsigned c = f[0];
   unsigned b = f[1];
