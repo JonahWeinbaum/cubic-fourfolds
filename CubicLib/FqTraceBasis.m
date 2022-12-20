@@ -7,7 +7,7 @@ function CppRep(x : Bits:=false)
     s := ChangeUniverse(Eltseq(x), Integers());
 
     if Bits then
-        return s;
+        return Reverse(s);
     else
         return Seqint(s, 2);
     end if;
@@ -32,8 +32,22 @@ function TraceBasis(k)
     A := Matrix([Reverse(Eltseq(b^2+b)) : b in Basis(k)]);
     
     E, U := EchelonForm(A);
-    newBasis := [k ! Eltseq(row) : row in Rows(U)];
 
+    // Permute the basis so that the pivors are on the diagonal.
+    
+    // <code>
+    d := Degree(k);
+    for i in [1..d] do
+        if E[i,i] eq 0 then
+            perm1 := [1..(i-1)];
+            perm2 := [(i+1)..d] cat [i];
+            P := PermutationMatrix(BaseField(k), perm1 cat perm2)^(-1);
+            U := P*U;
+        end if;
+    end for;
+    
+    // Construct the new bases
+    newBasis := [k ! Eltseq(row) : row in Rows(U)];
     return [z^2 + z : z in newBasis], newBasis;
 end function;
 
