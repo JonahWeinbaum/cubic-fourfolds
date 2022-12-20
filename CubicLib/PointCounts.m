@@ -311,9 +311,9 @@ singular point on the discriminant.}
 
     // If we are already in good coordinates, there is nothing to do.
     pt := Random(RationalPoints(pt));
-    if Eltseq(pt) eq [0,0,0,1] then
-        return conicCoeffs;
-    end if;
+    //if Eltseq(pt) eq [0,0,0,1] then
+    //    return g, conicCoeffs;
+    //end if;
     
     // Change coordinates so that pt = [0,0,0,1].
     trafo := Translation(P3, P3 ! [0,0,0,1], P3 ! pt);

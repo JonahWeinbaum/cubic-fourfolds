@@ -152,11 +152,12 @@ int Arf_invariant_b_equals_1(unsigned a, unsigned c) {
   const unsigned* pretrace_basis = pretrace_bases[n];
 
   unsigned acbb  = ff2k_mult(a, c);
+  unsigned pivot = 1 << (n-1);
   
-  for (int i = 0; i < n-1; i++) {
-    if (acbb & trace_basis[i]) {
-       acbb ^= trace_basis[i];
-    }
+  for (int i = 0; i < n; i++) {
+    if (acbb & pivot)
+      acbb ^= trace_basis[i];
+    pivot >>= 1;
   }
 
   // The trace is zero if and only if what remains is zero.
@@ -518,8 +519,8 @@ unsigned* quadratic_roots(unsigned* f, unsigned* roots) {
   const unsigned* trace_basis = trace_bases[n];
   const unsigned* pretrace_basis = pretrace_bases[n];
   
-  for (int i = 0; i < n-1; i++) {
-    if (acbb & trace_basis[i]) {
+  for (int i = 0; i < n; i++) {
+    if (acbb & pivot) {
        rt ^= pretrace_basis[i];
        acbb ^= trace_basis[i];
     }    
