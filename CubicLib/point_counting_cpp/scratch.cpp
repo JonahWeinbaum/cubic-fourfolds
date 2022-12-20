@@ -1,9 +1,10 @@
-#include <wmmintrin.h>
+// #include <wmmintrin.h>
 #include <ctype.h>
 #include <iostream>
 #include <ctime>
+#include <bit>
 #include <bitset>
-#include "tableio.h"
+// #include "tableio.h"
 
 const unsigned n = 15;
 const unsigned FINITEFIELDBITSIZE = n;
@@ -87,15 +88,17 @@ int main() {
   // To benchmark, we are going to use GF(2^13) arithmetic.
   const unsigned q = 1<<n;
 
-  unsigned x=0;
-  for (int i=0; i < q; i++) {
-    for (int j=0; j < q; j++) {
-      x += _ff2k_pclmul(i, j);
-    }
-  }
+  // unsigned x=0;
+  // for (int i=0; i < q; i++) {
+  //   for (int j=0; j < q; j++) {
+  //     x += _ff2k_pclmul(i, j);
+  //   }
+  // }
 
-  std::cout << "Total time: " << (std::clock() - cputime) * (1.0/CLOCKS_PER_SEC) << std::endl;
-  std::cout << "Dummy value: " << x << std::endl;
+  std::cout << std::popcount((unsigned)1123) << std::endl;
+  
+  //std::cout << "Total time: " << (std::clock() - cputime) * (1.0/CLOCKS_PER_SEC) << std::endl;
+  //std::cout << "Dummy value: " << x << std::endl;
   
   return 0;
 
@@ -119,5 +122,4 @@ int main() {
   // }
 
  // compare_2_table(mult, mult_new, q, q);
-return 0;
 }

@@ -39,8 +39,7 @@ CONST_R<[x]> := PolynomialRing(CONST_k, 6);
 CONST_V, CONST_Bit := GModule(CONST_G, CONST_R, 3);
     
 intrinsic CubicToBitList(cubic) -> SeqEnum
-{Converts a cubic into a (normalized) list of 56 bits}
-    
+{Converts a cubic into a (normalized) list of 56 bits}    
     return Reverse([Integers() ! CONST_Bit(cubic)[i] : i in [1..56]]);
 end intrinsic;
 
@@ -744,7 +743,6 @@ end intrinsic;
 
 intrinsic IrrationalFactor(f :: RngUPolElt) -> RngUPolElt
 {Given a Weil polynomial remove all factors of 1-T from f.}
-
     R<t> := Parent(f);
     if f eq 0 then return 0; end if;
     q := f;
@@ -781,6 +779,21 @@ intrinsic CWTL(f) -> Any
     return CubicWeilPolynomialToLPolynomial(f);
 end intrinsic;
 
+intrinsic CubicLPolynomialToPointCounts(f::RngUPolElt) -> SeqEnum
+{Given the L-polynomial, return the list of 22 point counts over Fq, for
+q = 1, ..., 22.}
+    PP<t> := PowerSeriesRing(Rationals(), 30);
+    LP4inv := (1-t) * (1-2*t) * (1-4*t) * (1-8*t) * (1-16*t);
+    F := PP ! f;
+    g := -Log(F * LP4inv);
+    coeffs := Eltseq(g)[1..22];
+    return [Integers() ! (n*coeffs[n]) : n in [1..22]];
+end intrinsic;
+
+intrinsic CubicWeilPolynomialToPointCounts(f::RngUPolElt : q:=2) -> SeqEnum
+{}
+    return CubicLPolynomialToPointCounts(CubicWeilPolynomialToLPolynomial(f : q:=q));
+end intrinsic;
 
 intrinsic ArtinTateValue(f::RngUPolElt : Weil:=false) -> FldRatElt
 {Given the L-polynomial of Frobenius acting on H^4(X, QQ_l), return the

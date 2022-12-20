@@ -66,7 +66,7 @@ const unsigned p = polynomials[FINITEFIELDBITSIZE];
 // See the Magma file FqTraceBasis.m (one directory up) to generate the data.
 // Store values so that x^2 + x are a basis for the trace zero subspace (except the last is
 // a placeholder.
-const unsigned pretrace_bases[][22] = {
+const unsigned pretrace_bases[][23] = {
   { 0 },
   { 1 },
   { 2, 1 },
@@ -100,7 +100,7 @@ const unsigned pretrace_bases[][22] = {
     1963936, 1 }
 };
 
-const unsigned trace_bases[][22] = {
+const unsigned trace_bases[][23] = {
   { 0 },  
   { 0 },
   { 1, 0 },
