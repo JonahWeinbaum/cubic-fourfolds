@@ -16,8 +16,7 @@
 
 // NOTE: We expect to see a -N flag at compile time.
 #ifndef N
-println("Error: No N provided at compile time.");
-return 1;
+throw std::invalid_argument("Error: No N provided at compile time.");
 #endif
 
 // TODO: Update with Jonah's multiplication function, if it does OK.
@@ -35,8 +34,7 @@ int main(int argc, char **argv) {
     "No argument should be provided for n. Instead, compile with the -N flag.";
 
   if (argc != 1) {
-    std::cerr << argument_error << std::endl;
-    return 1;
+    throw std::invalid_argument(argument_error);
   }
   
   std::string qq = std::to_string(q);
@@ -115,7 +113,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-// TODO: This only works over the A2 patch. 
+
 int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2) {
 
   // Magma will give us a fibration where A,B,C = y0,y1,y2. In particular, though
@@ -125,7 +123,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   unsigned abcde; // coefficients of 4:1 cover, defined in coeffs.h
   unsigned f[] = {e,d,c,b,a};
 
-  // TODO: If B is identically zero, then we have an issue.
+  // TODO: If B is identically zero, then we have an efficiency issue.
   // Otherwise, we are OK.
   
   if (y_1 == 1) {
@@ -136,7 +134,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
   if (y_1 != 0) throw std::invalid_argument("Function called with y_1 not either 0 or 1.");
     
   // Once y_1 = 0, theory guarantees that b = d = 0. Sanity check.
-  assert((b == 0) && (d==0));
+  assert((b==0) && (d==0));
 
   // Our quadratic is now a(z^2)^2 + c(z^2) + e. We can solve for the roots.
   if (a != 0) {
@@ -154,12 +152,7 @@ int contribution_of_fibre_over_P2_point(unsigned y_0, unsigned y_1, unsigned y_2
 
   } else if (c != 0) {
     // Exactly one root.
-    unsigned sy0 = ff2k_mult(y_0, c);
-    unsigned sy1 = 0;                 // Because y_1 = 0.
-    unsigned sy2 = ff2k_mult(y_2, c);
-    unsigned sy3 = e;                 // The root, scaled.
-    
-    return contribution_at_P3_point(sy0, sy1, sy2, sy3);
+    return contribution_at_P3_point(y_0, y_1, y_2, ff2k_sqrt(ff2k_divi(e, c)));
     
   } else if (e != 0) {
     // Nothing is a root.
@@ -192,7 +185,7 @@ int contribution_at_P3_point(unsigned y_0, unsigned y_1, unsigned y_2, unsigned 
   // The conic has rank 0, so the correct difference factor is q.
   if (A == 0 && B == 0 && C == 0 && D == 0 && E == 0 && F == 0)
     return q;
-
+  
   // The conic is rank 1. It is a double line in characteristic 2.
   if (B == 0 && D == 0 && E == 0)
     return 0;

@@ -98,7 +98,7 @@ inline ff2k_t ff2k_square(ff2k_t a) {
 // NOTE: No division by zero check.
 inline ff2k_t ff2k_inv(ff2k_t a) {
   const int n = FINITEFIELDBITSIZE;
-
+  assert(a!=0);
   // Use Lagrange to invert. that is, compute a^(2^n-2).
   // Note the binary expansion of 2^n-2 = 111...110.
   ff2k_t inva = 1;
@@ -107,8 +107,6 @@ inline ff2k_t ff2k_inv(ff2k_t a) {
     inva = ff2k_mult(inva, sqac);
     sqac = ff2k_square(sqac);
   }
-
-  
   return inva;
 }
 
@@ -284,12 +282,6 @@ int count_quadratic_roots(unsigned* f) {
   if (b==0) return 1;  // The quadratic has a double root.
 
   int arf = Arf_invariant(f[2], f[1], f[0]);
-
-  if (!(arf == 0 || arf == 1)) {
-    std::cerr << arf << std::endl;
-    std::cerr << (int)(2 != 0) << std::endl;
-    assert(arf == 0 || arf == 1);
-  }
   return (arf ^ 1) << 1;
 }
 
@@ -423,7 +415,7 @@ int count_poly_roots(unsigned* poly, int deg) {
   case  0: return 0;
   case -1: return q; // Polynomial is identically zero.
   }
-  
+
   // The key trick is to quickly compute the GCD with x^q-x, then check
   // the degree.
 
@@ -471,8 +463,6 @@ int count_poly_roots(unsigned* poly, int deg) {
     }          
   }
 
-  // std::cout << powx[0] << " " << powx[1] << " " << powx[2] << " " << powx[3] << std::endl;
-  
   // Subtract x
   powx[1] ^= 1;
 
@@ -523,7 +513,7 @@ unsigned* quadratic_roots(unsigned* f, unsigned* roots) {
     if (acbb & pivot) {
        rt ^= pretrace_basis[i];
        acbb ^= trace_basis[i];
-    }    
+    }
     pivot >>= 1;
   }
 

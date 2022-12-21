@@ -311,9 +311,9 @@ singular point on the discriminant.}
 
     // If we are already in good coordinates, there is nothing to do.
     pt := Random(RationalPoints(pt));
-    //if Eltseq(pt) eq [0,0,0,1] then
-    //    return g, conicCoeffs;
-    //end if;
+    // if Eltseq(pt) eq [0,0,0,1] then
+    // return g, conicCoeffs;
+    // end if;
     
     // Change coordinates so that pt = [0,0,0,1].
     trafo := Translation(P3, P3 ! [0,0,0,1], P3 ! pt);
@@ -339,6 +339,11 @@ singular point on the discriminant.}
 
     // TODO: Need to force B=y1 in rank degenerate cases (if this is possible.)
     assert newCoeffs[2] eq P3.2;
+
+    // TODO: For the time being, we need to force (A,B,C) = (y0,y1,y2). Otherwise
+    //       the C++ functionality doesn't work.
+
+    assert newCoeffs[1..3] eq [P3.1, P3.2, P3.3];
     
     // Return.
     return newg, newCoeffs;

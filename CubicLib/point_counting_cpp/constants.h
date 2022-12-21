@@ -69,7 +69,7 @@ const unsigned p = polynomials[FINITEFIELDBITSIZE];
 //
 // The trace basis is in a modified form of Echelon form, aside from the fact that the
 // zero rows are rotated to lie on the diagonal.
-const unsigned trace_bases[][23] = {
+const unsigned trace_bases[][22] = {
   { 0 },
   { 0 },
   { 0, 1 },
@@ -99,7 +99,7 @@ const unsigned trace_bases[][23] = {
     256, 128, 64, 32, 16, 8, 4, 2, 1 }
 };
   
-const unsigned pretrace_bases[][23] = {   
+const unsigned pretrace_bases[][22] = {   
   { 0 },
   { 1 },
   { 1, 2 },
