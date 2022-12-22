@@ -530,3 +530,20 @@ unsigned* quadratic_roots(unsigned* f, unsigned* roots) {
     return roots;
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Printing.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+// REMARK: Only works for nonnegative numbers.
+std::string int128_to_string(__int128 num) {
+    std::string str;
+    do {
+        int digit = num % 10;
+        str = std::to_string(digit) + str;
+        num = (num - digit) / 10;
+    } while (num != 0);
+    return str;
+}
