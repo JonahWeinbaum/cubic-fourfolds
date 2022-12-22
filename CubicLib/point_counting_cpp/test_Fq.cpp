@@ -6,7 +6,7 @@
 
 ff2k_t test_ff2k_mult(ff2k_t x, ff2k_t y) {
   // Stock multiplication algorithm.
-  unsigned a = x, b = y, ab = 0;
+  long a = (long)x, b = (long)y, ab = 0;
 
   while (b != 0) {
     // b = const + higher-deg part
@@ -19,7 +19,7 @@ ff2k_t test_ff2k_mult(ff2k_t x, ff2k_t y) {
     if (a & q) a ^= p;
   }
 
-  return ab;
+  return (ff2k_t)ab;
 }
 
 
@@ -62,13 +62,11 @@ int main() {
     std::clock_t cputime = std::clock();
 
     // Test Fq multiplication.
-    /*
     for (unsigned i=0; i < (1 << 17); i++) {
       for (unsigned j=0; j<10000; j++) {
         assert (ff2k_mult(i, j) == test_ff2k_mult(i, j));
       }
     }
-    */
     
     std::cout << "Multiplication: Total time: " << (std::clock() - cputime) * (1.0/CLOCKS_PER_SEC)
               << std::endl;
@@ -134,7 +132,11 @@ int main() {
 
         
   }
-  
+
+  // Quick check about integer sizes.
+  __int128 Q = (1 << 22);
+  std::string magmaQstring = "309485083608321363567181825";
+  assert(int128_to_string(Q*Q*Q*Q + Q*Q*Q + Q + 1).compare(magmaQstring) == 0);
    
   return 0;
 }
