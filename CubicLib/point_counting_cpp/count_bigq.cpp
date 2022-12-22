@@ -108,8 +108,9 @@ int main(int argc, char **argv) {
   
   //////////////////////////////////////
   // Final calculation of the formula.
-  long long Q = q; // to avoid overflows
-  std::cout <<  Q*Q*Q*Q + Q*Q*Q + Q*diff + Q + 1 << std::endl; // Send output to magma pipe.
+  __int128 Q = q; // to avoid overflows
+  std::string output = int128_to_string(Q*Q*Q*Q + Q*Q*Q + Q*diff + Q + 1);
+  std::cout << output  << std::endl; // Send output to magma pipe.
   return 0;
 }
 
