@@ -1,11 +1,17 @@
-//////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 // PointCounts.m
 //
 // Contains the functions necessary to run the specialized pointcounting
 // code of CubicLib.
+//
+////////////////////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////
+////////////////////////////////////////////////////
+//
 // CONSTANTS
+//
+////////////////////////////////////////////////////
+
 
 PATH_TO_LIB := PathToLib();
 
@@ -20,6 +26,37 @@ P5_4<[x]> := ProjectiveSpace(F4, 5);
 R_4 := CoordinateRing(P5_4);
 V_4, Bit_4 := GModule(G_4, R_4, 3);
 
+////////////////////////////////////////////////////
+//
+// Conversion from matrices to lines.
+//
+////////////////////////////////////////////////////
+
+intrinsic MatrixToLine(P::Prj, mat::ModMatFldElt) -> Sch
+{Converst a 4x6 matrix into a line.}
+    eqns := [&+[P.i * row[i] : i in [1..6]] : row in Rows(mat)];
+    L := Scheme(P, eqns);
+    return L;
+end intrinsic;
+
+    
+intrinsic LineToMatrix(line::Sch) -> ModFldMatElt
+{}
+    // First convert the line into Echelon form. We do so by extracting the
+    // coefficients of the defining equations.
+    assert Dimension(line) eq 1 and Degree(line) eq 1;
+    eqns := DefiningEquations(line);
+
+    R := Parent(eqns[1]);
+    mat := Matrix(BaseRing(R), [[MonomialCoefficient(ll, R.i) : i in [1..6]] : ll in eqns]);
+    return mat;
+end intrinsic;
+
+////////////////////////////////////////////////////
+//
+// Lines Through functionality
+//
+////////////////////////////////////////////////////
 
 lines := ReadLinesIndex();    
 echforms := lines;
@@ -91,6 +128,12 @@ intrinsic LinesThrough(f :: RngMPolElt) -> SeqEnum
 
     return lines;
 end intrinsic;
+
+////////////////////////////////////////////////////
+//
+// Conic fibration functions
+//
+////////////////////////////////////////////////////
 
 intrinsic ConicFibrationCoefficients(cubic) -> SeqEnum
 {Given a cubic containing the line x1 = x2 = x3 = x4 = 0, return the coefficients
@@ -196,31 +239,17 @@ conic fibration.}
     return g, [A,B,C,D,E,F];
 end intrinsic;
 
-intrinsic MatrixToLine(P::Prj, mat::ModMatFldElt) -> Sch
-{Converst a 4x6 matrix into a line.}
-    eqns := [&+[P.i * row[i] : i in [1..6]] : row in Rows(mat)];
-    L := Scheme(P, eqns);
-    return L;
-end intrinsic;
-
-    
-intrinsic LineToMatrix(line::Sch) -> ModFldMatElt
-{}
-    // First convert the line into Echelon form. We do so by extracting the
-    // coefficients of the defining equations.
-    assert Dimension(line) eq 1 and Degree(line) eq 1;
-    eqns := DefiningEquations(line);
-
-    R := Parent(eqns[1]);
-    mat := Matrix(BaseRing(R), [[MonomialCoefficient(ll, R.i) : i in [1..6]] : ll in eqns]);
-    return mat;
-end intrinsic;
-
 intrinsic ConicFibrationForm(cubic, line::Sch) -> RngMPol, SeqEnum
 {}
     return ConicFibrationForm(cubic, LineToMatrix(line));
 end intrinsic;
 
+
+////////////////////////////////////////////////////
+//
+// Addington-Auel standard form.
+//
+////////////////////////////////////////////////////
 
 intrinsic AddingtonAuelStandardForm(cubic : Nonflat:=false) -> RngMPol, SeqEnum
 {Transforms a cubic into a form as outlined in Addington-Auel Section 3.}
@@ -374,6 +403,19 @@ intrinsic DiscriminantProjectionEquations(conicCoeffs) -> SeqEnum
     return [a, b, c, d, e];
 end intrinsic;
 
+intrinsic FibrationBaseSchemeOnLine(conicCoeffs) -> Sch
+{}
+    R := Parent(conicCoeffs[1]);
+    P3 := Proj(R);
+    return Scheme(P3, conicCoeffs[1..3]);
+end intrinsic;
+
+
+////////////////////////////////////////////////////
+//
+// C++ interaction
+//
+////////////////////////////////////////////////////
 
 function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
 
@@ -399,12 +441,6 @@ function WriteHeaderFile(fname, conicCoeffs, discCoeffs)
     return 0;
 end function;
 
-intrinsic FibrationBaseSchemeOnLine(conicCoeffs) -> Sch
-{}
-    R := Parent(conicCoeffs[1]);
-    P3 := Proj(R);
-    return Scheme(P3, conicCoeffs[1..3]);
-end intrinsic;
 
 intrinsic CppCountCorrection(cppCounts, conicCoeffs) -> SeqEnum
 {Add correction terms, amounting to changing P1 x P2 to the actual
@@ -472,66 +508,19 @@ exceptional fibre for the conic fibration.}
 end intrinsic;
 
 
-intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11,
-                              CompilerOptimization:=false,
-                              CompileEachQ:=false,                              
-                              UseCache:=true,
-                              PrintTimes:=false) -> SeqEnum
-{Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
-
-    // This function is mostly based off of 
-    // Section 3 of Addington-Auel. See loc. cit. for details.
-    //
-    // The actual driver of this function is the C++ code in point_counting_cpp.
-
-    // Now compute coefficients for the conic bundle fibration
-    // that will be fed into C++ point counting code.
-    if not CompileEachQ then
-        g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);           
-    else
-        g, conicCoeffs := ConicFibrationForCpp(cubic);
+intrinsic CompileCppCounter(compileString : PrintTimes:=PrintTimes)
+{}
+    timeBeforeCompile := Cputime();
+    retcode := System(compileString);
+    if retcode ne 0 then
+        error "Error at compile time step. Exit status: ", retcode;
     end if;
-    discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
-        
-    // If we have a cone, it is easier to count the points directly.
-    if conicCoeffs[1..5] eq [0,0,0,0,0] then
-        cc := PointCountsMagma(conicCoeffs[6] : Maxq:=Maxq);
-        return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
+
+    if PrintTimes then
+        print "Compile time: ", Cputime() - timeBeforeCompile;
     end if;
-    
-    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
-                                           : ExecNum:=ExecNum, Minq:=Minq, Maxq:=Maxq,
-                                             CompilerOptimization:=CompilerOptimization,
-                                             CompileEachQ:=CompileEachQ,
-                                             UseCache:=UseCache,
-                                             PrintTimes:=PrintTimes);
-    
-    return CppCountCorrection(cppCounts, conicCoeffs);
-end intrinsic;
 
-intrinsic PointCounts(cubic, m) -> RngIntElt
-{Compute the point counts on the given smooth cubic over F_(2^m). }
-    return PointCounts(cubic : Minq:=m, Maxq:=m);
-end intrinsic;
-
-intrinsic PointCountsNoTransform(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
-{Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.
-In this version the cubic is assumed to be in Addington-Auel standard form.
-Primarily, this function is used for testing.}
-
-    conicCoeffs := ConicFibrationCoefficients(cubic);
-    discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
-
-    // If we have a cone, it is easier to count the points directly.
-    if conicCoeffs[1..5] eq [0,0,0,0,0] then
-        cc := PointCountsMagma(conicCoeffs[6] : Maxq:=Maxq);
-        return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
-    end if;
-    
-    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
-                                           : ExecNum:=ExecNum, Maxq:=Maxq);
-
-    return CppCountCorrection(cppCounts, conicCoeffs);
+    return;
 end intrinsic;
 
 
@@ -587,21 +576,84 @@ intrinsic PointCountingSystemStrings(: ExecNum:=false,
 end intrinsic;
 
 
-intrinsic CompileCppCounter(compileString : PrintTimes:=PrintTimes)
-{}
-    timeBeforeCompile := Cputime();
-    retcode := System(compileString);
-    if retcode ne 0 then
-        error "Error at compile time step. Exit status: ", retcode;
-    end if;
+////////////////////////////////////////////////////
+//
+// Point Counting Functionality
+//
+////////////////////////////////////////////////////
 
-    if PrintTimes then
-        print "Compile time: ", Cputime() - timeBeforeCompile;
-    end if;
+intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11,
+                              CompilerOptimization:=false,
+                              CompileEachQ:=false,                              
+                              UseCache:=true,
+                              PrintTimes:=false) -> SeqEnum
+{Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.}
 
-    return;
+    // This function is mostly based off of 
+    // Section 3 of Addington-Auel. See loc. cit. for details.
+    //
+    // The actual driver of this function is the C++ code in point_counting_cpp.
+
+    // Now compute coefficients for the conic bundle fibration
+    // that will be fed into C++ point counting code.
+    if not CompileEachQ then
+        g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);           
+    else
+        g, conicCoeffs := ConicFibrationForCpp(cubic);
+    end if;
+    discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
+        
+    // If we have a cone, it is easier to count the points directly.
+    if conicCoeffs[1..5] eq [0,0,0,0,0] then
+        cc := PointCountsMagma(conicCoeffs[6] : Maxq:=Maxq);
+        return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
+    end if;
+    
+    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
+                                           : ExecNum:=ExecNum, Minq:=Minq, Maxq:=Maxq,
+                                             CompilerOptimization:=CompilerOptimization,
+                                             CompileEachQ:=CompileEachQ,
+                                             UseCache:=UseCache,
+                                             PrintTimes:=PrintTimes);
+    
+    return CppCountCorrection(cppCounts, conicCoeffs);
 end intrinsic;
 
+intrinsic PointCounts(cubic::RngMPolElt, m::RngIntElt :
+                      ExecNum:=false,
+                      CompilerOptimization:=false,
+                      CompileEachQ:=false,
+                      UseCache:=true,
+                      PrintTimes:=false) -> RngIntElt
+{Compute the point counts on the given smooth cubic over F_(2^m).}
+    return PointCounts(cubic : Minq:=m, Maxq:=m,
+                               ExecNum:=ExecNum,
+                               CompilerOptimization:=CompilerOptimization,
+                               CompileEachQ:=CompileEachQ,
+                               UseCache:=UseCache,
+                               PrintTimes:=PrintTimes);
+end intrinsic;
+
+
+intrinsic PointCountsNoTransform(cubic : ExecNum:=false, Maxq:=11) -> SeqEnum
+{Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.
+In this version the cubic is assumed to be in Addington-Auel standard form.
+Primarily, this function is used for testing.}
+
+    conicCoeffs := ConicFibrationCoefficients(cubic);
+    discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
+
+    // If we have a cone, it is easier to count the points directly.
+    if conicCoeffs[1..5] eq [0,0,0,0,0] then
+        cc := PointCountsMagma(conicCoeffs[6] : Maxq:=Maxq);
+        return [cc[i] * 2^(2*i) + 2^i + 1 : i in [1..Maxq]];
+    end if;
+    
+    cppCounts := UncorrectedCppPointCounts(conicCoeffs, discCoeffs
+                                           : ExecNum:=ExecNum, Maxq:=Maxq);
+
+    return CppCountCorrection(cppCounts, conicCoeffs);
+end intrinsic;
 
 intrinsic UncorrectedCppPointCounts(conicCoeffs, discCoeffs
                                     : ExecNum:=false, Minq:= 1, Maxq:=11,
@@ -658,8 +710,7 @@ useful information is produced, but one has to correct the output.}
                                           FixN:=m,
                                           CompilerOptimization:=true, // Force optimization.
                                           UseCache:=false, // No tables.
-                                          Warn:=warn
-                                      );
+                                          Warn:=warn);
 
             try
                 CompileCppCounter(compileString : PrintTimes:=PrintTimes);
@@ -702,10 +753,15 @@ useful information is produced, but one has to correct the output.}
     return point_counts;
 end intrinsic;
 
+////////////////////////////////////////////////////
+//
+// Testing functionality
+//
+////////////////////////////////////////////////////
+
 intrinsic PointCountsMagma(cubic : Maxq:=3) -> SeqEnum
 {Compute the pointcounts on the given cubic over Fq, where q = 2,4,...,2048.
-Primarily used for testing.
-}
+Primarily used for testing.}
     R := Parent(cubic);
     P := Proj(R);
     X := Scheme(P, cubic);
