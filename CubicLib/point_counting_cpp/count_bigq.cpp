@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   // See contribution_at_P3_point in order to determine the correct contribution.
   
   // The contribution to the point count from the distinguished singularity.
-  int diff = contribution_at_P3_point(0,0,0,1);
+  long diff = contribution_at_P3_point(0,0,0,1);
 
   
   // We next look at the open subscheme Delta - (0:0:0:1). 
@@ -88,18 +88,18 @@ int main(int argc, char **argv) {
 
   
   // The contribution from the fibre over (1:0:0).
-  diff += contribution_of_fibre_over_P2_point(1, 0, 0);
+  diff += (long)contribution_of_fibre_over_P2_point(1, 0, 0);
 
   // The contribution over the hyperplane at infinity.
   for (unsigned y_2 = 0; y_2 < q; y_2++)
    if (orbit_rep[y_2] == y_2)
-     diff += contribution_of_fibre_over_P2_point(y_2, 0, 1) * orbit_size[y_2];
+     diff += (long)contribution_of_fibre_over_P2_point(y_2, 0, 1) * (long)orbit_size[y_2];
   
   // The contribution from the locus {B != 0}. 
   for (unsigned y_1 = 0; y_1 < q; y_1++)
     if (orbit_rep[y_1] == y_1)
       for (unsigned y_2 = 0; y_2 < q; y_2++) {
-        diff += contribution_of_fibre_over_P2_point(y_1, 1, y_2) * orbit_size[y_1];
+        diff += (long)contribution_of_fibre_over_P2_point(y_1, 1, y_2) * (long)orbit_size[y_1];
       }
   
   std::cerr << "Iterate time: " << (std::clock() - cputime) * 1./CLOCKS_PER_SEC
