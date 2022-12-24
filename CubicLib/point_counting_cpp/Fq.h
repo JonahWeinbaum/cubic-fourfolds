@@ -38,15 +38,18 @@ static inline uint64_t _ff2k_mult_delay_reduction(unsigned a, unsigned b) {
   return C[0];  
 }
 
-static inline uint64_t _ff2k_reduce(ff2k_t a) {
+// TODO: This could be the source of the bug.
+static inline uint64_t _ff2k_reduce(uint64_t a) {
   const unsigned n = FINITEFIELDBITSIZE;
   
   // Reduce modulo the polynomial.
-  ff2k_t pxi = (n > 1) ? (p << (n-2)) : p; // Should compile away.
+  uint64_t pxi = (n > 1) ? ((uint64_t)p << (n-2)) : p; // Should compile away.
+  uint64_t piv = (uint64_t)1 << (2*n - 2);
   for (int i = 2*n-2; i >= n; i--) {
     // If the i-th bit is 1, reduce by the polynomial.
-    if (a & (1<<i)) a ^= pxi;
+    if (a & piv) a ^= pxi;
     pxi = pxi >> 1;
+    piv = piv >> 1;
   }     
   return a;
 }
