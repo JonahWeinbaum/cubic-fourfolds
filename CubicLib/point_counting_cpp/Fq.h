@@ -39,7 +39,7 @@ static inline uint64_t _ff2k_mult_delay_reduction(unsigned a, unsigned b) {
 }
 
 // TODO: This could be the source of the bug.
-static inline uint64_t _ff2k_reduce(uint64_t a) {
+static inline ff2k_t _ff2k_reduce(uint64_t a) {
   const unsigned n = FINITEFIELDBITSIZE;
   
   // Reduce modulo the polynomial.
@@ -54,7 +54,7 @@ static inline uint64_t _ff2k_reduce(uint64_t a) {
   return a;
 }
 
-inline ff2k_t _ff2k_square_delay_reduction(ff2k_t a) {
+inline uint64_t _ff2k_square_delay_reduction(ff2k_t a) {
   return _ff2k_mult_delay_reduction(a, a);
 }
 
@@ -368,17 +368,17 @@ int count_quartic_roots(ff2k_t* poly) {
 
     // Square, in characteristic 2.
     C = ff2k_square(powx[2]);
-    powx[0] = _ff2k_square_delay_reduction(powx[0]);
-    powx[2] = _ff2k_square_delay_reduction(powx[1]);
+    uint64_t powx0_64 = _ff2k_square_delay_reduction(powx[0]);
+    uint64_t powx2_64 = _ff2k_square_delay_reduction(powx[1]);
 
     // Reduce (the polynomial)
-    powx[0] ^= _ff2k_mult_delay_reduction(C, f[0]);
-    powx[1]  = ff2k_mult(C, f[1]); // Note: squaring made powx[1] = 0. (Theoretically)
-    powx[2] ^= _ff2k_mult_delay_reduction(C, f[2]);    
+    powx0_64 ^= _ff2k_mult_delay_reduction(C, f[0]);
+    powx[1]   = ff2k_mult(C, f[1]); // Note: squaring made powx[1] = 0. (Theoretically)
+    powx2_64 ^= _ff2k_mult_delay_reduction(C, f[2]);    
 
     // Reduce the numbers
-    powx[0] = _ff2k_reduce(powx[0]);
-    powx[2] = _ff2k_reduce(powx[2]);
+    powx[0] = _ff2k_reduce(powx0_64);
+    powx[2] = _ff2k_reduce(powx2_64);
     
     /*
     // Square, in characteristic 2.
