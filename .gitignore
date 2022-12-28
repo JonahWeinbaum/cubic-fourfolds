@@ -2,7 +2,7 @@
 *~
 *.out
 *.sage.py
-coeffs.h
+coeffs*.h
 *.sig
 *.o
 *.DSYM
@@ -11,3 +11,4 @@ example16.txt
 test_bigger
 fqtables
 .DS_Store
+ABC/email.txt
