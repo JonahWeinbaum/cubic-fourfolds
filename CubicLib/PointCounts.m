@@ -582,6 +582,55 @@ end intrinsic;
 //
 ////////////////////////////////////////////////////
 
+intrinsic PrepareClusterCppComputation(cubic : CompileEachQ:=true,
+                                               ExecNum:=false,
+                                               CompilerOptimization:=true)
+{This function is meant to prepare a massively parallel computation on the
+Discovery cluster at Dartmouth. We write the header information and exit
+Magma so that Magma's weird emulation stuff won't interfere with the pure
+C++ task.}
+
+    require CompileEachQ;
+
+    // Essentially, assume CompileEachQ for this function.
+    // 1. ConicFibrationForCpp
+
+    // 2.
+    if not CompileEachQ then
+        g, conicCoeffs := AddingtonAuelStandardForm(cubic : Nonflat);           
+    else
+        g, conicCoeffs := ConicFibrationForCpp(cubic);
+    end if;
+    discCoeffs := DiscriminantProjectionEquations(conicCoeffs);
+
+    // Need to write the header files.
+    // Change to C++ directory.
+    entryDir := GetCurrentDirectory();
+    ChangeDirectory(PATH_TO_LIB * "point_counting_cpp");
+    
+    if not CompileEachQ then
+        // Create relevant strings.
+        compileString, headerFile, execFile :=
+            PointCountingSystemStrings( : ExecNum:=ExecNum,
+                                          CompilerOptimization:=CompilerOptimization,
+                                          UseCache:=UseCache);
+
+    else
+        // Just extract information for header files.
+        _, headerFile, execFile := PointCountingSystemStrings( : ExecNum:=ExecNum);
+    end if;
+
+    // Prepare C++ code.
+    ok_write := WriteHeaderFile(headerFile, conicCoeffs, discCoeffs);
+
+    // NOTE: Compilation must happen on the cluster itself. See the "discovery.sh"
+    //       script.
+
+    // Return from whence we came.
+    ChangeDirectory(entryDir);
+    return;
+end intrinsic;
+
 intrinsic PointCounts(cubic : ExecNum:=false, Minq:=1, Maxq:=11,
                               CompilerOptimization:=false,
                               CompileEachQ:=false,                              
