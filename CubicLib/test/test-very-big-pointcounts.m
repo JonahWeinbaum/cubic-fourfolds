@@ -31,7 +31,7 @@ for i in [20..28] do
     assert extended_counts[1..11] eq counts;
 
     // Next, test the big point counts.
-    new_counts := PointCounts(f : Minq := B, Maxq := B, CompileEachQ:=true);
+    new_counts := PointCounts(f, B : CompileEachQ, CompilerOptimization);
     assert extended_counts[B] eq new_counts[1];
 end for;
 
