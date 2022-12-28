@@ -584,13 +584,15 @@ end intrinsic;
 
 intrinsic PrepareClusterCppComputation(cubic : CompileEachQ:=true,
                                                ExecNum:=false,
-                                               CompilerOptimization:=true)
+                                               CompilerOptimization:=true,
+                                               UseCache:=false)
 {This function is meant to prepare a massively parallel computation on the
 Discovery cluster at Dartmouth. We write the header information and exit
 Magma so that Magma's weird emulation stuff won't interfere with the pure
 C++ task.}
 
-    require CompileEachQ;
+    require CompileEachQ: "Only works with ComplieEachQ set to true.";
+    require not UseCache: "Only works with UseCache set to false.";
 
     // Essentially, assume CompileEachQ for this function.
     // 1. ConicFibrationForCpp
