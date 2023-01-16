@@ -12,3 +12,5 @@ test_bigger
 fqtables
 .DS_Store
 ABC/email.txt
+CubicLib/point_counting_cpp/coefficient_headers/*
+CubicLib/point_counting_cpp/output/*
