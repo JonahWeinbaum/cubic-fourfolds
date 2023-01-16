@@ -38,7 +38,6 @@ static inline uint64_t _ff2k_mult_delay_reduction(unsigned a, unsigned b) {
   return C[0];  
 }
 
-// TODO: This could be the source of the bug.
 static inline ff2k_t _ff2k_reduce(uint64_t a) {
   const unsigned n = FINITEFIELDBITSIZE;
   
@@ -84,12 +83,12 @@ static inline uint64_t _ff2k_mult_delay_reduction(unsigned a, unsigned b) {
   return ff2k_mult(a, b); 
 }
 
-static inline uint64_t _ff2k_reduce(ff2k_t a) {
+static inline ff2k_t _ff2k_reduce(uint64_t a) {
   return a;
 }
 
-inline ff2k_t _ff2k_square_delay_reduction(ff2k_t a) {
-  return a;
+inline uint64_t _ff2k_square_delay_reduction(ff2k_t a) {
+  return ff2k_mult(a, a);
 }
 
 #endif /////////// End ARM chip check
