@@ -21,5 +21,14 @@
 #SBATCH --error=output/%x.%j.err
 
 # The code you want to run in your job
-g++ -std=c++11 -mpclmul -O4 -DCOEFFSFILE='"coefficient_headers/coeffs1.h"' -DN=11 count_bigq.cpp -o a1.out
-./a1.out
+
+# TODO: Reset optimization level.
+# TODO: Change the value of N after testing.
+ls coefficient_headers | tr -dc '0-9\n' | xargs -I {} \
+    g++ -std=c++11 -mpclmul -O1 -DCOEFFSFILE='"coefficient_headers/coeffs{}.h"' \
+    -DN=3 count_bigq.cpp -o 'a{}.out'
+
+# ls coefficient_headers | tr -dc '0-9\n' | xargs -I {} ./a'{}'.out
+
+# Might work?? Unfortunately the outputs get eaten.
+# ls a*.out | xargs -I {} $(./{})
