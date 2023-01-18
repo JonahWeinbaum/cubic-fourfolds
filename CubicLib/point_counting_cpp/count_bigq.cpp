@@ -19,9 +19,6 @@
 throw std::invalid_argument("Error: No N provided at compile time.");
 #endif
 
-// TODO: Update with Jonah's multiplication function, if it does OK.
-// TODO: Move these to Fq.h
-unsigned* quadratic_roots(unsigned* f);
 
 // function prototypes
 int contribution_at_P3_point(unsigned, unsigned, unsigned, unsigned);

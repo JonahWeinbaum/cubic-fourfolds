@@ -608,7 +608,8 @@ C++ task.}
     // Need to write the header files.
     // Change to C++ directory.
     entryDir := GetCurrentDirectory();
-    ChangeDirectory(PATH_TO_LIB * "point_counting_cpp");
+    writeDir := PATH_TO_LIB * "point_counting_cpp/coefficient_headers";
+    ChangeDirectory(writeDir);
     
     if not CompileEachQ then
         // Create relevant strings.
