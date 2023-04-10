@@ -578,7 +578,9 @@ This function requires that either Macaulay 2 or Sage is installed.}
 
     fstr := Sprint(fR);
     try
-        cmd := Sprintf("M2 -e \"f=\\\"%o\\\"\" macaulay2/compute_sign.m2", fstr);
+	// Write to input file and execute M2.
+	Write("macaulay2/input.m2", fstr : Overwrite);
+	cmd := Sprint("M2 --script macaulay2/compute_sign.m2");
         disc := eval Read(POpen(cmd, "r"));
         
     catch e

@@ -14,3 +14,4 @@ fqtables
 ABC/email.txt
 CubicLib/point_counting_cpp/coefficient_headers/*
 CubicLib/point_counting_cpp/output/*
+CubicLib/macaulay2/input.m2

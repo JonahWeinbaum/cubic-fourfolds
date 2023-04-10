@@ -1,5 +1,7 @@
 load "Resultants.m2"
 
 R = ZZ[u,v,w,x,y,z];
-print discriminant(value(f));
-quit;
+finput = value get "macaulay2/input.m2"
+
+print discriminant(value(finput));
+exit;
