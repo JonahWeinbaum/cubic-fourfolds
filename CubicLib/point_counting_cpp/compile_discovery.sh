@@ -2,10 +2,7 @@
 
 run_discovery_job(){
     # Compile
-    g++ -DN=5 -std=c++11 -DARM -O3 -DCOEFFSFILE="\"coeffs$1.h\"" count_bigq.cpp -o a.$1.out
-
-    # Run
-    ./a.$1.out
+    g++ -DN=5 -std=c++11 -DARM -O3 -DCOEFFSFILE="\"coeffs$1.h\"" count_bigq.cpp -o build/count_bigq_$1
 }
 
 # For loop 5 times
