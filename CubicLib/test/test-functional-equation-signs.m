@@ -25,7 +25,14 @@ end while;
 // Load cubics and compare signs.
 cubics := LoadCubicOrbitData(: Flat, OnlySmooth);
 
-for i in first1[1..5] do
+for j in [1..5] do
+    i := Random(firstmin1);
+    sign := FunctionalEquationSign(cubics[i]);
+    assert sign eq -1;
+end for;
+
+for j in [1..5] do
+    i := Random(first1);
     sign := FunctionalEquationSign(cubics[i]);
     assert sign eq 1;
 end for;

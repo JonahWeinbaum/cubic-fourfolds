@@ -595,10 +595,10 @@ This function requires that either Macaulay 2 or Sage is installed.}
     // Once the discriminant is found, compute the sign.
     if disc mod 8 eq 3 then
         return -1;
-    elif disc mod 8 eq 1 then
+    elif disc mod 8 eq 7 then
         return 1;
     else
-        error "Unexpected discriminant residue.";
+        error "Unexpected discriminant residue.", disc mod 8;
     end if;
     
 end intrinsic;
