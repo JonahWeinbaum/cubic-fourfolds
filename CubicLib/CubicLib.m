@@ -562,6 +562,44 @@ intrinsic CppInputString(h) -> MonStgElt
     return ret;
 end intrinsic;
 
+/////////////////////////////////////////////////
+//
+// Macaulay2 interaction
+//
+/////////////////////////////////////////////////
+
+intrinsic FunctionalEquationSign(f) -> RngIntElt
+{Given a cubic fourfold `f` over F2, compute the sign of the functional equation.
+This function requires that either Macaulay 2 or Sage is installed.}
+
+    // Testing functionality with the Sage fallback first.
+    R<x,y,z,u,v,w> := PolynomialRing(BaseRing(Parent(f)), 6);
+    fR := R ! f;
+
+    fstr := Sprint(fR);
+    try
+        cmd := Sprintf("M2 -e \"f=\\\"%o\\\"\" macaulay2/compute_sign.m2", fstr);
+        disc := eval Read(POpen(cmd, "r"));
+        
+    catch e
+        print "Warning: Using Sage fallback. Please ensure Macaulay2 can be launched with `M2`.";
+        // If we use sage, there is a missing factor of
+        //     3^21 = 3 mod 8.
+        // compared to the Macaulay implementation.        
+        cmd := Sprintf("sage -c 'f=\"%o\"; load(\"macaulay2/compute_sign.sage\")'", fstr);
+        disc := 3 * eval Read(POpen(cmd, "r"));
+    end try;
+    
+    // Once the discriminant is found, compute the sign.
+    if disc mod 8 eq 3 then
+        return -1;
+    elif disc mod 8 eq 1 then
+        return 1;
+    else
+        error "Unexpected discriminant residue.";
+    end if;
+    
+end intrinsic;
 
 /////////////////////////////////////////////////
 //
