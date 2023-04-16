@@ -33,6 +33,7 @@ function KSNormalization(f)
     return 2 * f / Evaluate(f, 0);
 end function;
 
+
 function Theorem2Test(f)
     R<t> := Parent(f);
 
@@ -52,7 +53,6 @@ function Computation3cTest(f)
 
     K<T> := PowerSeriesRing(Rationals(), 10);
     den := (1 - T) * (1 - q*T) * (1 - q^2 * T) * q^(-1) * Evaluate(L, q*T);
-
     
     try
         series := -Log(den);
@@ -87,5 +87,3 @@ R<t> := Parent(Random(weilPolySet));
 specialPolySet := {f : f in weilPolySet | Valuation(f, 1-t) gt 0};
 
 KS := {f : f in specialPolySet | BothTests(f)};
-
-
