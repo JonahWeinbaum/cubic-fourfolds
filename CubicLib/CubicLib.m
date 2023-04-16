@@ -247,7 +247,8 @@ intrinsic GLModule(n::RngIntElt, d::RngIntElt, q::RngIntElt) -> ModGrp
 end intrinsic;
 
 intrinsic IsFeasible(n::RngIntElt, d::RngIntElt, q::RngIntElt
-                     : Ncores := 100,
+                     : CheckOrbits:=true,
+                       Ncores := 100,
                        TimeLimit := 525600 * 60) -> BoolElt
 {A Heuristic to determines whether orbit enumeration is feasible for forms
 of degree d in P^n over Fq. Our heuristic is based on current techniques 
@@ -259,21 +260,23 @@ doesn't find the optimal composition series.
     G := GL(n+1, q);
     R := PolynomialRing(GF(q), n+1);
     V := GModule(G, R, d);    
-    return IsFeasible(V : Ncores:=Ncores, TimeLimit:=TimeLimit);
+    return IsFeasible(V : CheckOrbits:=CheckOrbits, Ncores:=Ncores, TimeLimit:=TimeLimit);
 end intrinsic;
 
-intrinsic IsFeasible(V::ModGrp
-                     : Ncores := 100,
+intrinsic IsFeasible(V::ModGrp                            
+                     : CheckOrbits := true,
+                       Ncores := 100,
                        TimeLimit := 525600 * 60) -> BoolElt
 {}
-    if CountOrbits(V) gt CONST_Max_Feasible_Orbits then
-        return false;
+    if CheckOrbits and CountOrbits(V) gt CONST_Max_Feasible_Orbits then
+        return false, "Too many orbits";
     end if;
     
     // This can take a while for really big modules. The answer is probably no
     // in this case anyways.
     found_series := CandidateCompositionSeries(V);
-    return &or [IsFeasibleUnionFind(V) : V in {comp[1] : comp in found_series}];
+    return &or [IsFeasibleUnionFind(V : CheckOrbits:=false)
+                : V in {comp[1] : comp in found_series}];
 end intrinsic;
 
 intrinsic CandidateCompositionSeries(V::ModGrp) -> SeqEnum
@@ -300,31 +303,34 @@ intrinsic CandidateCompositionSeries(V::ModGrp) -> SeqEnum
 end intrinsic;
 
 intrinsic IsFeasibleUnionFind(n::RngIntElt, d::RngIntElt, q::RngIntElt
-                              : Ncores := 100,
+                              : CheckOrbits:=true,
+                                Ncores := 100,
                                 TimeLimit := 525600 * 60) -> BoolElt
 {A Heuristic to determines whether orbit enumeration is feasible for forms
 of degree d in P^n over Fq. Our heuristic is based on using union-find 
 based on reasonable hardware from 2022.}
 
     if n gt 2 and d gt 10 then
-        return false;
+        return false, "Too many orbits";
     end if;
 
     G := GL(n+1, q);
     R := PolynomialRing(GF(q), n+1);    
     V := GModule(G, R, d);
 
-    return IsFeasibleUnionFind(V : Ncores:=Ncores, TimeLimit:=TimeLimit);
+    return IsFeasibleUnionFind(V : CheckOrbits:=CheckOrbits,
+                                   Ncores:=Ncores, TimeLimit:=TimeLimit);
 end intrinsic;
 
 intrinsic IsFeasibleUnionFind(V::ModGrp
-                              : Ncores := 100,
+                              : CheckOrbits:=true,
+                                Ncores := 100,
                                 TimeLimit := 525600 * 60) -> BoolElt
 {}
     // Note the number of seconds in a year is 525600 * 60.
 
-    if CountOrbits(V) gt CONST_Max_Feasible_Orbits then
-        return false;
+    if CheckOrbits and CountOrbits(V) gt CONST_Max_Feasible_Orbits then
+        return false, "Too many orbits";
     end if;
     
     // If the dimension is larger than 60, the answer is no.
@@ -646,7 +652,7 @@ end intrinsic;
 
 intrinsic IsSignAmbiguous(halfWeil) -> BoolElt, RngIntElt
 {Determine if there is an ambiguity in the functional equation. Also return the
-"Badness" rating -- the largest integer such that the 11+ith coefficient is zero.}
+"Badness" rating -- the largest integer such that the coefficient of the degree 11+i term is zero.}
 
     if halfWeil[12] ne 0 then return false, -1; end if;
     
