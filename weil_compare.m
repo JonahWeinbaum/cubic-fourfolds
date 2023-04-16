@@ -86,6 +86,6 @@ end function;
 R<t> := Parent(Random(weilPolySet));
 specialPolySet := {f : f in weilPolySet | Valuation(f, 1-t) gt 0};
 
-inKSlist := {f : f in specialPolySet | BothTests(f)};
-notinKSlist := {f : f in specialPolySet | not BothTests(f)};
+KS := {f : f in specialPolySet | BothTests(f)};
+
 
