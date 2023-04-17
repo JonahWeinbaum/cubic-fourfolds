@@ -87,3 +87,18 @@ R<t> := Parent(Random(weilPolySet));
 specialPolySet := {f : f in weilPolySet | Valuation(f, 1-t) gt 0};
 
 KS := {f : f in specialPolySet | BothTests(f)};
+
+////////////////////////////////////////////////////////////////////////////////
+// Task 4 : Try to find examples like on page 9 of Kedlaya-Sutherland
+//          Deg(L_trans) = 20,  L_trans(-1) = 3, L_trans(1) is large.
+
+task4 := {g : g in KS | Degree(gtr) eq 20 and Evaluate(gtr, -1) eq 3
+                        where gtr := TranscendentalFactor(g)};
+
+task4values := {Evaluate(TranscendentalFactor(g), 1) : g in task4};
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Task 5 : Do our own version of Honda-Tate for cubic 4-folds. That is, list
+//          all the things that could potentially be the Weil polynomial of a
+//          cubic fourfold.
