@@ -540,6 +540,21 @@ intrinsic WriteOrbitSizeData(i, stabilizersize) -> RngIntElt
     return 0;
 end intrinsic;
 
+intrinsic ReadOrbitSizeData() -> Assoc
+{}
+    fname := "group_action/stabilizers_info/stabilizer_counts.csv";
+    A := ReadCSV(fname);
+    return A;
+end intrinsic;
+
+intrinsic ReadStabilizerSizeData() -> Assoc
+{}
+    A := ReadOrbitSizeData();
+    n := #GL(6, FiniteField(2));
+    f := func<size | ExactQuotient(n, size)>;
+    return CacheMap(f, A);
+end intrinsic;
+
 intrinsic ReportError(index, err)
 {Write a report of the error to the file.}
     Write(DATA_DIRECTORY * ERROR_FILE, Sprintf("%o, %o", index, err));

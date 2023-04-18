@@ -1,5 +1,5 @@
 // The following script draws the feasibility boxes reported in the paper.
-AttachSpec("CubicLib/CubicLib.spec");
+AttachSpec("../CubicLib/CubicLib.spec");
 TMO := "Too many orbits";
 Y := true;
 N := false;

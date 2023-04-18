@@ -20,9 +20,9 @@ assert totalNum eq 2971182;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task 2 : Count the number of zeta functions from our database.
-ourWeilPolys := eval Read(DatabaseDirectory()*"zeta_functions/zeta_coefficients.csv");
+ourWeilPolys := ReadZetaFunctions();
 
-weilPolySet := {Polynomial(tup[2]) : tup in ourWeilPolys};
+weilPolySet := {f : f in ourWeilPolys};
 assert #weilPolySet eq 86472;
 
 
