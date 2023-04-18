@@ -76,8 +76,362 @@ intrinsic ReadLinesIndex() -> SeqEnum
     return lines;
 end intrinsic;
 
+/**********************************************
+* Lines-Through Serialization/Deserialization *
+**********************************************/
+
+LINE_BIT_NUM := 10;  //<The number of bits used to express a line index
+PLANE_BIT_NUM := 11; //<The number of btis used to express a plane index
+
+intrinsic SerializeLinesThrough(linesthrough :: SeqEnum) -> SeqEnum
+{Given a sequence of inidces correspondign to forms representing lines through a cubic, convert it into a sequence of bytes.}
+    byteseq := [];
+    bitsseq := [];
+    bits_num := Ceiling((#linesthrough + 1)*LINE_BIT_NUM / 8) * 8;
+    bytes_num := Ceiling((#linesthrough + 1)*LINE_BIT_NUM / 8);
+
+    //Add each line
+    for i in [0..(#linesthrough - 1)] do
+        for j in [1..LINE_BIT_NUM] do
+            bitsseq[i*LINE_BIT_NUM + j] := BitwiseAnd(ShiftRight(linesthrough[i+1], LINE_BIT_NUM-j), 1);
+        end for;
+    end for;
+
+    //Add delimiter (LINE_BIT_NUM23)
+    for j in [1..LINE_BIT_NUM] do
+        bitsseq[#(linesthrough)*LINE_BIT_NUM + j] := 1;
+    end for;
+    //Add padding
+    padding_start := (#linesthrough + 1)*LINE_BIT_NUM + 1;
+    for i in [padding_start..bits_num] do
+        bitsseq[i] := 0;
+    end for;
+
+    //Convert to bytes sequence
+    for i in [0..bytes_num-1] do 
+        byte := 0;
+        for j in [1..8] do
+            current_bit := bitsseq[8*i + j];
+            byte := BitwiseOr(byte, ShiftLeft(current_bit, 8-j));
+        end for;
+        Append(~byteseq, byte);
+    end for;
+
+    return byteseq;
+end intrinsic;
+
+intrinsic DeserializeLinesThrough(byteseq :: SeqEnum) -> SeqEnum
+{Given a sequence of bytes representing lines through a cubic, convert it into a sequence of indices.}
+    linesthrough := [];   //<Array of line indexes
+
+    //Initialize Counters
+    current_bit_num := 1;  //<Current bit counter
+    current_byte_num := 1; //<Current byte counter
+    current_line_num := 1; //<Current line (LINE_BIT_NUM bits) counter
+    
+    while true do
+
+        line := 0;
+
+        end_of_current_byte := BitwiseAnd((current_bit_num + 7), (65528)); //< Bit number which bookends the current byte
+        get_to_ten := LINE_BIT_NUM - (end_of_current_byte - current_bit_num) - 1;    //< Number of bits carried over into the adjacent byte
+  
+        //Read Current Byte up to LINE_BIT_NUM total or end of byte
+        for i in [current_bit_num..end_of_current_byte] do  
+
+            //Compute relative indices
+            relative_index := i mod 8;
+            if relative_index eq 0 then 
+                relative_index := 8;
+            end if;
+            relative_line_index := current_bit_num mod LINE_BIT_NUM;
+            if relative_line_index eq 0 then 
+                relative_line_index := LINE_BIT_NUM;
+            end if;
+
+            //Get current info
+            current_byte := byteseq[current_byte_num];
+            current_bit := BitwiseAnd(ShiftRight(current_byte, 8-relative_index), 1);
+
+            //Add the relative_line_index'th bit of the current line
+            line := BitwiseOr(line, ShiftLeft(current_bit, LINE_BIT_NUM - relative_line_index));
+
+            //Update position
+            current_bit_num := current_bit_num + 1;
+        end for;
+
+        //Finish reading line if it carries to next byte up to LINE_BIT_NUM bits
+        for i in [1..get_to_ten] do
+
+            //Compute relative indices 
+            relative_index := i mod 8;
+            if relative_index eq 0 then 
+                relative_index := 8;
+            end if;
+            relative_line_index := current_bit_num mod LINE_BIT_NUM;
+            if relative_line_index eq 0 then 
+                relative_line_index := LINE_BIT_NUM;
+            end if;
 
 
+            //Get current info
+            current_byte := byteseq[current_byte_num + 1];
+            current_bit := BitwiseAnd(ShiftRight(current_byte, 8-relative_index), 1);
+            
+            //Add the relative_line_index'th bit of the current line
+            line := BitwiseOr(line, ShiftLeft(current_bit, LINE_BIT_NUM - relative_line_index));
+
+            //Update position
+            current_bit_num := current_bit_num + 1;
+        end for;
+
+        //Delimiter Check
+        if line eq 1023 then 
+            break;
+        end if;
+
+        Append(~linesthrough, line);
+        
+        //Update counters
+        current_byte_num := Floor((current_bit_num - 1)/ 8) + 1;
+        current_line_num := (current_bit_num - 1) / LINE_BIT_NUM + 1;
+
+    end while;
+
+    return linesthrough;
+
+end intrinsic;
+
+intrinsic DeserializeLinesThroughFile(byteseq :: SeqEnum) -> SeqEnum
+{Given a sequence of bytes representing lines throughs each cubic, convert it into a sequence of sequences of indices.}
+    linesthrough := [];   //<Array of line indexes
+
+    //Initialize Counters
+    total_up_to_last := 0; //<Total bits read in up to last linesthrough
+    current_bit_num := 1;  //<Current bit counter
+    current_byte_num := 1; //<Current byte counter
+    current_line_num := 1; //<Current line (LINE_BIT_NUM bits) counter
+    
+    while true do 
+
+        linesthroughcurr := [];
+
+        //Read until next delimiter
+        while true do
+
+            line := 0;
+
+            end_of_current_byte := BitwiseAnd((current_bit_num + 7), (65528)); //< Bit number which bookends the current byte
+            get_to_ten := LINE_BIT_NUM - (end_of_current_byte - current_bit_num) - 1;    //< Number of bits carried over into the adjacent byte
+    
+            //Read Current Byte up to LINE_BIT_NUM total or end of byte
+            for i in [current_bit_num..end_of_current_byte] do  
+
+                //Compute relative indices
+                relative_index := i mod 8;
+                if relative_index eq 0 then 
+                    relative_index := 8;
+                end if;
+                relative_line_index := (current_bit_num - total_up_to_last) mod LINE_BIT_NUM;
+                if relative_line_index eq 0 then 
+                    relative_line_index := LINE_BIT_NUM;
+                end if;
+
+                //Get current info
+                current_byte := byteseq[current_byte_num];
+                current_bit := BitwiseAnd(ShiftRight(current_byte, 8-relative_index), 1);
+
+                //Add the relative_line_index'th bit of the current line
+                line := BitwiseOr(line, ShiftLeft(current_bit, LINE_BIT_NUM - relative_line_index));
+
+                //Update position
+                current_bit_num := current_bit_num + 1;
+            end for;
+
+            //Finish reading line if it carries to next byte up to LINE_BIT_NUM bits
+            for i in [1..get_to_ten] do
+
+                //Compute relative indices 
+                relative_index := i mod 8;
+                if relative_index eq 0 then 
+                    relative_index := 8;
+                end if;
+                relative_line_index := (current_bit_num - total_up_to_last) mod LINE_BIT_NUM;
+                if relative_line_index eq 0 then 
+                    relative_line_index := LINE_BIT_NUM;
+                end if;
+
+
+                //Get current info
+                current_byte := byteseq[current_byte_num + 1];
+                current_bit := BitwiseAnd(ShiftRight(current_byte, 8-relative_index), 1);
+                
+                //Add the relative_line_index'th bit of the current line
+                line := BitwiseOr(line, ShiftLeft(current_bit, LINE_BIT_NUM - relative_line_index));
+
+                //Update position
+                current_bit_num := current_bit_num + 1;
+            end for;
+
+            //Delimiter Check
+            if line eq 1023 then 
+                break;
+            end if;
+
+
+            Append(~linesthroughcurr, line);
+            
+            //Update counters
+            current_byte_num := Floor((current_bit_num - 1)/ 8) + 1;
+            current_line_num := (current_bit_num - 1) / LINE_BIT_NUM + 1;
+
+        end while;
+
+        //Jump over padding to next linesthrough
+        end_of_byte := BitwiseAnd((current_bit_num + 7), (65528));
+        padding := (end_of_byte - current_bit_num + 1) mod 8;
+
+        //Update counters
+        current_bit_num := current_bit_num + padding;
+        current_byte_num := Floor((current_bit_num - 1)/ 8) + 1;
+        current_line_num := (current_bit_num - 1) / LINE_BIT_NUM + 1;
+        total_up_to_last := current_bit_num - 1;
+
+        Append(~linesthrough, linesthroughcurr);
+
+        if current_byte_num eq #byteseq + 1 then
+	        break;
+	    end if; 
+
+    end while;
+
+    return linesthrough;
+
+end intrinsic;
+
+/***********************************************
+* Planes-Through Serialization/Deserialization *
+************************************************/
+
+intrinsic SerializePlanesThrough(planesthrough :: SeqEnum) -> SeqEnum
+{Given a sequence of inidces correspondign to forms representing planes through a cubic, convert it into a sequence of bytes.}
+    byteseq := [];
+    bitsseq := [];
+    bits_num := Ceiling((#planesthrough + 1)*PLANE_BIT_NUM / 8) * 8;
+    bytes_num := Ceiling((#planesthrough + 1)*PLANE_BIT_NUM / 8);
+
+    //Add each line
+    for i in [0..(#planesthrough - 1)] do
+        for j in [1..PLANE_BIT_NUM] do
+            bitsseq[i*PLANE_BIT_NUM + j] := BitwiseAnd(ShiftRight(planesthrough[i+1], PLANE_BIT_NUM-j), 1);
+        end for;
+    end for;
+
+    //Add delimiter (2047)
+    for j in [1..PLANE_BIT_NUM] do
+        bitsseq[#(planesthrough)*PLANE_BIT_NUM + j] := 1;
+    end for;
+
+    //Add padding
+    padding_start := (#planesthrough + 1)*PLANE_BIT_NUM + 1;
+    for i in [padding_start..bits_num] do
+        bitsseq[i] := 0;
+    end for;
+
+    //Convert to bytes sequence
+    for i in [0..bytes_num-1] do 
+        byte := 0;
+        for j in [1..8] do
+            current_bit := bitsseq[8*i + j];
+            byte := BitwiseOr(byte, ShiftLeft(current_bit, 8-j));
+        end for;
+        Append(~byteseq, byte);
+    end for;
+
+    return byteseq;
+end intrinsic;
+
+intrinsic DeserializePlanesThrough(byteseq :: SeqEnum) -> SeqEnum
+{Given a sequence of bytes representing planes through a cubic, convert it into a sequence of indices.}
+    planesthrough := [];   //<Array of line indexes
+
+    //Initialize Counters
+    current_bit_num := 1;  //<Current bit counter
+    current_byte_num := 1; //<Current byte counter
+    current_line_num := 1; //<Current line (LINE_BIT_NUM bits) counter
+    
+    while true do
+
+        plane := 0;
+
+        end_of_current_byte := BitwiseAnd((current_bit_num + 7), (65528)); //< Bit number which bookends the current byte
+        get_to_elv := PLANE_BIT_NUM - (end_of_current_byte - current_bit_num) - 1;    //< Number of bits carried over into the adjacent byte
+  
+        //Read Current Byte up to LINE_BIT_NUM total or end of byte
+        for i in [current_bit_num..end_of_current_byte] do  
+
+            //Compute relative indices
+            relative_index := i mod 8;
+            if relative_index eq 0 then 
+                relative_index := 8;
+            end if;
+            relative_plane_index := current_bit_num mod PLANE_BIT_NUM;
+            if relative_plane_index eq 0 then 
+                relative_plane_index := PLANE_BIT_NUM;
+            end if;
+
+            //Get current info
+            current_byte := byteseq[current_byte_num];
+            current_bit := BitwiseAnd(ShiftRight(current_byte, 8-relative_index), 1);
+
+            //Add the relative_line_index'th bit of the current line
+            plane := BitwiseOr(plane, ShiftLeft(current_bit, PLANE_BIT_NUM - relative_plane_index));
+
+            //Update position
+            current_bit_num := current_bit_num + 1;
+        end for;
+
+        //Finish reading line if it carries to next byte up to LINE_BIT_NUM bits
+        for i in [1..get_to_elv] do
+
+            //Compute relative indices 
+            relative_index := i mod 8;
+            if relative_index eq 0 then 
+                relative_index := 8;
+            end if;
+            relative_plane_index := current_bit_num mod PLANE_BIT_NUM;
+            if relative_plane_index eq 0 then 
+                relative_plane_index := PLANE_BIT_NUM;
+            end if;
+
+
+            //Get current info
+            current_byte := byteseq[current_byte_num + 1];
+            current_bit := BitwiseAnd(ShiftRight(current_byte, 8-relative_index), 1);
+            
+            //Add the relative_line_index'th bit of the current line
+            plane := BitwiseOr(plane, ShiftLeft(current_bit, PLANE_BIT_NUM - relative_plane_index));
+
+            //Update position
+            current_bit_num := current_bit_num + 1;
+        end for;
+
+        //Delimiter Check
+        if plane eq 2047 then 
+            break;
+        end if;
+
+        Append(~planesthrough, plane);
+        
+        //Update counters
+        current_byte_num := Floor((current_bit_num - 1)/ 8) + 1;
+        current_line_num := (current_bit_num - 1) / LINE_BIT_NUM + 1;
+
+    end while;
+
+    return planesthrough;
+
+end intrinsic;
 
 /*
 intrinsic SerializeLinesThrough(linesthrough :: SeqEnum) -> SeqEnum

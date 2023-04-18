@@ -403,6 +403,24 @@ end intrinsic;
 //
 /////////////////////////////////////////////////
 
+/*
+ fname := "../database/differentiability/smooth/smooth.csv";
+smoothindices := {};
+
+ io := Open(fname, "r");
+ print "smooth data loading...";
+time while true do
+ l := Gets(io);
+ if IsEof(l) then break; end if;
+ s := Split(l, ",");
+ Include(~smoothindices, StringToInteger(s[1]) );
+end while;
+
+print "smooth data loaded."
+
+*/
+
+// TODO: Update the OnlySmooth option to use the cache.
 intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false,
                                OnlySmooth:=false, Verbose:=false)
           -> SeqEnum
