@@ -520,32 +520,20 @@ end intrinsic;
 
 intrinsic ReadZetaFunctions() -> Assoc
 {Load the list of Zeta functions from the database.}
-    fname := DATABASE_DIRECTORY * "zeta_functions/zeta_coefficients.csv";
-    _<t> := PolynomialRing(Rationals());
+    fname := "zeta_functions/zeta_coefficients.csv";
+    R<t> := PolynomialRing(Rationals());
 
-    // zetafunctions[k] will be Q(t/4), where Q(t)is characterisitc polynomial of frobenius
+    // zetafunctions[k] will be Q(t/4), where Q(t) is characterisitc polynomial of frobenius
     // acting on on H^4_prim(X, Q_l(2)).
-
-    error "TODO: This function is broken with the current data format. Fixme.";
-    
-    zetafunctions := AssociativeArray();
-
-    io := Open(fname, "r");
-    print "zeta data loading...";
-    i :=0;
-    time while true do
-             l := Gets(io);
-             i := i+1;
-             if i eq 0 mod 50000 then print i; end if;
-             if IsEof(l) then break; end if;
-             s := eval(l);
-             zetafunctions[s[1]] := Polynomial(Rationals(), s[2]);
-         end while;
-
-    print "zeta data loaded.";
-    return zetafunctions;
+    A := ReadCSV(fname);
+    B := AssociativeArray();
+    for k in Keys(A) do
+        B[k] := R ! Polynomial(A[k]);
+    end for;
+    return B;
 end intrinsic;
-        
+
+
 intrinsic WriteOrbitSizeData(i, stabilizersize) -> RngIntElt
 {}
     Write(DATA_DIRECTORY * ORBIT_SIZE_FILE, Sprintf("%o, %o", i, stabilizersize));
@@ -762,18 +750,11 @@ returns the characteristic polynomial of Frobenius acting on nonprimitive cohomo
 
     elif isWeil1 and isWeil2 then
 
-        // TODO: We should have a file keeping track of the higher point counts,
-        // for the cubics that need them.
-        
-        // Note: should include an optimization regarding which point
-        // count to request.
-
         if FailIfAmbiguous then
             error "Ambiguous sign of functional equation. Cannot determine zeta functions.";
         else
             return -1; // Obviously wrong.
         end if;
-
 
         error "Not implemented.";
         
