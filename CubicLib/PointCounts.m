@@ -64,6 +64,12 @@ echforms := lines;
 ptsonlines := AssociativeArray();
 monoevaluated := AssociativeArray();
 
+linesThroughIndices := AssociativeArray();
+for form in Keys(monoevaluated) do
+    linesThroughIndices[form] := Index(lines, form);
+end for;
+
+
 //Loop over all lines
 for form in echforms do 
     nullsp := NullspaceOfTranspose(form);
@@ -103,7 +109,7 @@ function paritycalc(bitstr)
     return parity;
 end function;
 
-
+// TODO: Add an option to return indices.
 intrinsic LinesThrough(f :: RngMPolElt) -> SeqEnum
 {Given a cubic polynomial f, return the set of lines through f.}
 

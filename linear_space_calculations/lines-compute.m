@@ -1,7 +1,20 @@
-AttachSpec("../../cubic-fourfolds/CubicLib/CubicLib.spec");
+////////////////////////////////////////////////////////////////////////////////
+//
+// lines-compute.m
+//
+////////////////////////////////////////////////////////////////////////////////
+//
+// This file finds the list of lines through every orbit representative
+// within our database. The result is a CSV file.
 
-/*
+
+AttachSpec("../CubicLib/CubicLib.spec");
+
+
 lines := ReadLinesIndex();
+
+
+// This preamble is also duplicate code.
 k := FiniteField(2);
 F4 := FiniteField(4);
 basF4 := Basis(F4);
@@ -42,8 +55,8 @@ for form in lines do
         monoevaluated[form][1] :=BitwiseOr (ShiftLeft(monoevaluated[form][1], 1), Integers()!eval1);
         monoevaluated[form][2] :=BitwiseOr (ShiftLeft(monoevaluated[form][2], 1), Integers()!eval2);
         monoevaluated[form][3] :=BitwiseOr (ShiftLeft(monoevaluated[form][3], 1), Integers()!eval3bas1);
-         monoevaluated[form][4] :=BitwiseOr (ShiftLeft(monoevaluated[form][4], 1), Integers()!eval3bas2);
-          end for;
+        monoevaluated[form][4] :=BitwiseOr (ShiftLeft(monoevaluated[form][4], 1), Integers()!eval3bas2);
+    end for;
 end for;
 
 function paritycalc(bitstr)
@@ -55,9 +68,17 @@ function paritycalc(bitstr)
     return parity;
 end function;
 
-function LinesThrough(cubic)
+
+/*
+// TODO: Update PointCounts.m to absorb this function.
+indices := AssociativeArray();
+for form in Keys(monoevaluated) do
+    indices[form] := Index(lines, form);
+end for;
+
+function LinesThroughIndices(cubic)
     f := CubicToInt(cubic);
-    lines := [];
+    linesthrough := [];
     for form in Keys(monoevaluated) do 
         evals := monoevaluated[form];
 
@@ -85,17 +106,16 @@ function LinesThrough(cubic)
             continue;
         end if;
 
-        lines cat:= [form];
+        linesthrough cat:= [indices[form] ];
 
     end for;
 
-    return lines;
+    return linesthrough;
 end function;
-
 */
 
 
-orbdata := LoadCubicOrbitData(: Flat, BitList);
+orbdata := LoadCubicOrbitData(: Flat:=true);
 
 k := FiniteField(2);
 G := GL(6, k);
@@ -104,40 +124,28 @@ R := CoordinateRing(P5);
 
 V, Bit := GModule(G, R, 3);
 
-//fname := Sprintf("../../database/linear_subspaces/lines_through_cubics/lines-in-orbits.data");
-fname := Sprintf("../../database/linear_subspaces/lines_through_cubics/avi-test.data");
-file := Open(fname, "w");
-i := 1;
-for f  in orbdata do
-    seq := SerializeLinesThrough(LinesThrough(f @@ Bit));
-    WriteBytes(file, seq);
-    if i/1000 in Integers() then
-        i;
-    end if;
-    i := i+1;
-end for;
 
-/*// Compute lines for all cubics in database
+// Compute lines for all cubics in database
+orbdata := [orbdata[i] : i in [1..100]];
 linesdata := [];
 
 for i in [1..85] do
-o := orbdata[i];
-time linesdata cat:= [[LinesThrough(f) : f in o ] ];
- i;
+    o := orbdata[i];
+    time linesdata cat:= [[LinesThrough(f) : f in o ] ];
+    i;
 end for;
 
- Ar := AssociativeArray();
- 
- linesseq := Setseq(lines);
+Ar := AssociativeArray();
+linesseq := Setseq(lines);
  
 for i in [1..#linesseq] do
-Ar[linesseq[i]] := i;   
+    Ar[linesseq[i]] := i;
 end for;
 
-for i in [1..85] do                              
-fname := Sprintf("../data/lines-%o.data", i);
- PrintFile(fname, linesdata[i]);
+for i in [1..85] do
+    fname := Sprintf("../data/lines-%o.data", i);
+    PrintFile(fname, linesdata[i]);
 end for;
-*/
+
 
 
