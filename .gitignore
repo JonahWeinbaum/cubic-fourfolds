@@ -15,3 +15,6 @@ ABC/email.txt
 CubicLib/point_counting_cpp/coefficient_headers/*
 CubicLib/point_counting_cpp/output/*
 CubicLib/macaulay2/input.m2
+macaulay2/discriminant_computation/x*
+macaulay2/discriminant_computation/out*
+macaulay2/discriminant_computation/smoothuvwxyz
