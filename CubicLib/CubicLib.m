@@ -549,10 +549,10 @@ end intrinsic;
 
 intrinsic ReadStabilizerSizeData() -> Assoc
 {}
-    A := ReadOrbitSizeData();
     n := #GL(6, FiniteField(2));
     f := func<size | ExactQuotient(n, size)>;
-    return CacheMap(f, A);
+    fname := "group_action/stabilizers_info/stabilizer_counts.csv";
+    return ReadCSV(fname : FunctionOnLoad:=f);
 end intrinsic;
 
 intrinsic ReportError(index, err)
@@ -561,7 +561,7 @@ intrinsic ReportError(index, err)
     return;
 end intrinsic;
 
-intrinsic ReadCSV(fname : DataPath:=DatabaseDirectory()) -> Assoc
+intrinsic ReadCSV(fname : DataPath:=DatabaseDirectory(), FunctionOnLoad:=func<x|x>) -> Assoc
 {}
     io := Open(DataPath * fname, "r");
     data := AssociativeArray();
@@ -573,9 +573,9 @@ intrinsic ReadCSV(fname : DataPath:=DatabaseDirectory()) -> Assoc
         if #args eq 1 then
             data[i] := true; // Just mark the key.
         elif #args eq 2 then
-            data[i] := args[2];
+            data[i] := FunctionOnLoad(args[2]);
         else
-            data[i] := args[2..#args];
+            data[i] := FunctionOnLoad(args[2..#args]);
         end if;
     end while;
     return data;
