@@ -129,4 +129,5 @@ task4values := {Evaluate(TranscendentalFactor(g), 1) : g in task4};
 ////////////////////////////////////////////////////////////////////////////////
 // Task 6 : Try to find examples with negative point counts.
 
-
+rank3 := {f : f in weilPolySet | Valuation(f, 1-t) eq 2};
+interesting := {f : f in rank3 | not AllPointCountsPositive(f)};
