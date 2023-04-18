@@ -1,4 +1,4 @@
-AttachSpec("CubicLib/CubicLib.spec");
+AttachSpec("../CubicLib/CubicLib.spec");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task 1 : Count Kedlaya-Sutherland objects and check out numbers match theirs.
@@ -20,7 +20,7 @@ assert totalNum eq 2971182;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task 2 : Count the number of zeta functions from our database.
-ourWeilPolys := eval Read(DatabaseDirectory()*"zeta_functions/zeta_coeffs_NEWandCORRECT.csv");
+ourWeilPolys := eval Read(DatabaseDirectory()*"zeta_functions/zeta_coefficients.csv");
 
 weilPolySet := {Polynomial(tup[2]) : tup in ourWeilPolys};
 assert #weilPolySet eq 86472;
@@ -45,6 +45,28 @@ function Theorem2Test(f)
     return IsSquare(Evaluate(L1, -1));
 end function;
 
+function AllPointCountsPositive(f)
+    q := 2;
+    R<t> := Parent(f);
+    L := KSNormalization(f/(1-t));
+
+    K<T> := PowerSeriesRing(Rationals(), 10);
+    den := (1 - T) * (1 - q*T) * (1 - q^2 * T) * q^(-1) * Evaluate(L, q*T);
+    
+    try
+        series := -Log(den);
+    catch e
+        print den;    
+        error e;
+    end try;
+
+    // Check for the conditions.
+    assert Coefficient(series, 0) eq 0;
+    coeffs := [Coefficient(series, i) : i in [1..9]];
+
+    allPositive := &and [c ge 0 : c in coeffs];
+    return allPositive;
+end function;
 
 function Computation3cTest(f)
     q := 2;
@@ -102,3 +124,9 @@ task4values := {Evaluate(TranscendentalFactor(g), 1) : g in task4};
 // Task 5 : Do our own version of Honda-Tate for cubic 4-folds. That is, list
 //          all the things that could potentially be the Weil polynomial of a
 //          cubic fourfold.
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Task 6 : Try to find examples with negative point counts.
+
+

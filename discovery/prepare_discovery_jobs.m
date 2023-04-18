@@ -1,6 +1,6 @@
 // Setup jobs for the Discovery cluster.
-AttachSpec("CubicLib/CubicLib.spec");
-load "CubicLib/Fano.m";
+AttachSpec("../CubicLib/CubicLib.spec");
+load "../CubicLib/Fano.m";
 
 function OKTransform(f)
     try

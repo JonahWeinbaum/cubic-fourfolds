@@ -11,7 +11,7 @@
 from sage.rings.polynomial.weil.weil_polynomials import WeilPolynomials
 import time
 
-datapath = "../database/zeta_functions/"
+datapath = "../../database/zeta_functions/"
 polRing.<x> = PolynomialRing(ZZ)
 
 #######

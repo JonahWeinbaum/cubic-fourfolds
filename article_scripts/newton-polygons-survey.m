@@ -1,4 +1,4 @@
-AttachSpec("CubicLib/CubicLib.spec");
+AttachSpec("../CubicLib/CubicLib.spec");
 zetafunctions := ReadZetaFunctions();
 
 //actualzetas[k] will be Q(t), the degree 22 factor in denominator of zeta function..
