@@ -396,6 +396,13 @@ intrinsic deserialize(byteseq) -> RngMPolElt
     return seq;
 end intrinsic;
 
+
+/////////////////////////////////////////////////
+//
+// Database
+//
+/////////////////////////////////////////////////
+
 intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false,
                                OnlySmooth:=false, Verbose:=false)
           -> SeqEnum
@@ -469,12 +476,6 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitL
 end intrinsic;
 
 
-/////////////////////////////////////////////////
-//
-// Database
-//
-/////////////////////////////////////////////////
-
 // Write stuff to file.
 
 // We would like to include records of the following form:
@@ -499,6 +500,34 @@ intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
     return 0;
 end intrinsic;
 
+intrinsic ReadZetaFunctions() -> Assoc
+{Load the list of Zeta functions from the database.}
+    fname := DATABASE_DIRECTORY * "zeta_functions/zeta_coefficients.csv";
+    _<t> := PolynomialRing(Rationals());
+
+    // zetafunctions[k] will be Q(t/4), where Q(t)is characterisitc polynomial of frobenius
+    // acting on on H^4_prim(X, Q_l(2)).
+
+    error "TODO: This function is broken with the current data format. Fixme.";
+    
+    zetafunctions := AssociativeArray();
+
+    io := Open(fname, "r");
+    print "zeta data loading...";
+    i :=0;
+    time while true do
+             l := Gets(io);
+             i := i+1;
+             if i eq 0 mod 50000 then print i; end if;
+             if IsEof(l) then break; end if;
+             s := eval(l);
+             zetafunctions[s[1]] := Polynomial(Rationals(), s[2]);
+         end while;
+
+    print "zeta data loaded.";
+    return zetafunctions;
+end intrinsic;
+        
 intrinsic WriteOrbitSizeData(i, stabilizersize) -> RngIntElt
 {}
     Write(DATA_DIRECTORY * ORBIT_SIZE_FILE, Sprintf("%o, %o", i, stabilizersize));
