@@ -403,56 +403,55 @@ end intrinsic;
 //
 /////////////////////////////////////////////////
 
-/*
- fname := "../database/differentiability/smooth/smooth.csv";
-smoothindices := {};
-
- io := Open(fname, "r");
- print "smooth data loading...";
-time while true do
- l := Gets(io);
- if IsEof(l) then break; end if;
- s := Split(l, ",");
- Include(~smoothindices, StringToInteger(s[1]) );
-end while;
-
-print "smooth data loaded."
-
-*/
-intrinsic _ManageLoadOptions(orbdata : BitList:=false, OnlySmooth:=false) -> SeqEnum
+intrinsic _ManageBitListSmoothOptions(orbdata : BitList:=false, OnlySmooth:=false) -> SeqEnum
 {}
-    try
-        fname := "differentiability/smooth/smooth.csv";
-        smoothIndices := Keys(ReadCSV(fname));
-        seenElements := 0;
+    if BitList and not OnlySmooth then
+        return orbdata;
+    end if;
 
-        orbdataNew := [];
-        for lst in orbdata do
-            lstNew := [];
-            for i in [1..#lst] do
-                if i + seenElements in smoothIndices then
-                    Append(~orbdataNew, lst[i]);
-                end if;
-            end for;
-            
-            seenElements +:= #lst;
-            Append(~orbdataNew, lstNew);
-        end for;
+    // In all other cases we need the cubics.
+    orbdata_cubics := [[BitListToCubic(b) : b in lst] : lst in orbdata];
+
+    // Setup smoothness filterer based on options
+    if OnlySmooth then
+        // Check for the cache. Otherwise, use IsSmooth.
+        try
+            fname := "differentiability/smooth/smooth.csv";
+            smoothIndices := Keys(ReadCSV(fname));
+            filterer := func<i, j | j in smoothIndices>;
         
-    catch e
-        if not BitList then
-            orbdataNew := [[BitListToCubic(f) : f in lst] : lst in orbdata];
+        catch e
+            filterer := func<i, j | IsSmooth(orbdata_cubics[i][j])>;
+        end try;
+        
+    else
+        filterer := func<i, j | true>;
+    end if;
 
-            if OnlySmooth then
-                orbdataNew := [[f : f in lst | IsSmooth(f)] : lst in orbdata];
-            end if;
-        else
-            if OnlySmooth then
-                orbdataNew := [[b : b in lst | IsSmooth(BitListToCubic(b))] : lst in orbdata];
-            end if;
-        end if;
-    end try;
+    // Select return type via bitlist option
+    if BitList then
+        selector := orbdata;
+    else
+        selector := orbdata_cubics;
+    end if;
 
+    // Iterate to construct the new object.
+    seenElements := 0;
+    orbdataNew := [];
+    for i in [1..#orbdata] do
+        lstNew := [];
+        for j in [1..#orbdata[i]] do
+            // Get the right things associated to (i,j)
+            if filterer(i,j) then
+                Append(~lstNew, selector[i][j]);
+            end if;                       
+        end for;
+
+        seenElements +:= #orbdata[i];
+        Append(~orbdataNew, lstNew);
+    end for;
+
+    // Return
     return orbdataNew;
 end intrinsic;
 
@@ -507,7 +506,7 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitL
     end for;
 
     // Filter by smoothness and apply Bitlist.
-    orbdata := _ManageLoadOptions(orbdata : BitList:=BitList, OnlySmooth:=OnlySmooth);
+    orbdata := _ManageBitListSmoothOptions(orbdata : BitList:=BitList, OnlySmooth:=OnlySmooth);
         
     if Flat then
 	return &cat orbdata;
