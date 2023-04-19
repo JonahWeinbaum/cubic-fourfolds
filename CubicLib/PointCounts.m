@@ -109,8 +109,8 @@ function paritycalc(bitstr)
     return parity;
 end function;
 
-// TODO: Add an option to return indices.
-intrinsic LinesThrough(f :: RngMPolElt) -> SeqEnum
+
+intrinsic LinesThrough(f :: RngMPolElt : ReturnIndices:=false) -> SeqEnum
 {Given a cubic polynomial f, return the set of lines through f.}
 
     f := CubicToInt(f);    
@@ -129,7 +129,11 @@ intrinsic LinesThrough(f :: RngMPolElt) -> SeqEnum
 	end for;
 	if cont_flag then continue; end if;
 
-        lines cat:= [form];
+        if ReturnIndices then
+            Append(~lines, linesThroughIndices[form]);
+        else
+            Append(~lines, form);
+        end if;
     end for;
 
     return lines;

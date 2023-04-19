@@ -419,8 +419,44 @@ end while;
 print "smooth data loaded."
 
 */
+intrinsic _ManageLoadOptions(orbdata : BitList:=false, OnlySmooth:=false) -> SeqEnum
+{}
+    try
+        fname := "differentiability/smooth/smooth.csv";
+        smoothIndices := Keys(ReadCSV(fname));
+        seenElements := 0;
 
-// TODO: Update the OnlySmooth option to use the cache.
+        orbdataNew := [];
+        for lst in orbdata do
+            lstNew := [];
+            for i in [1..#lst] do
+                if i + seenElements in smoothIndices then
+                    Append(~orbdataNew, lst[i]);
+                end if;
+            end for;
+            
+            seenElements +:= #lst;
+            Append(~orbdataNew, lstNew);
+        end for;
+        
+    catch e
+        if not BitList then
+            orbdataNew := [[BitListToCubic(f) : f in lst] : lst in orbdata];
+
+            if OnlySmooth then
+                orbdataNew := [[f : f in lst | IsSmooth(f)] : lst in orbdata];
+            end if;
+        else
+            if OnlySmooth then
+                orbdataNew := [[b : b in lst | IsSmooth(BitListToCubic(b))] : lst in orbdata];
+            end if;
+        end if;
+    end try;
+
+    return orbdataNew;
+end intrinsic;
+
+
 intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false,
                                OnlySmooth:=false, Verbose:=false)
           -> SeqEnum
@@ -428,12 +464,8 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitL
 
     ZEROCUBIC := [0 : i in [1..56]];
     if Verbose then print "loading data..."; end if;
-
-    if Quick then
-	range := [1..2];
-    else
-	range := [1..85];
-    end if;
+    
+    if Quick then range := [1..2]; else range := [1..85]; end if;
     
     orbdata := [];
     for k in range do
@@ -474,18 +506,9 @@ intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitL
 	if Verbose then print k; end if;
     end for;
 
-    if not BitList then
-        orbdata := [[BitListToCubic(f) : f in lst] : lst in orbdata];
-
-        if OnlySmooth then
-            orbdata := [[f : f in lst | IsSmooth(f)] : lst in orbdata];
-        end if;
-    else
-        if OnlySmooth then
-            orbdata := [[b : b in lst | IsSmooth(BitListToCubic(b))] : lst in orbdata];
-        end if;
-    end if;
-
+    // Filter by smoothness and apply Bitlist.
+    orbdata := _ManageLoadOptions(orbdata : BitList:=BitList, OnlySmooth:=OnlySmooth);
+        
     if Flat then
 	return &cat orbdata;
     else
@@ -561,8 +584,94 @@ intrinsic ReportError(index, err)
     return;
 end intrinsic;
 
+intrinsic DetermineReadTypes(DataPath, fname) -> Tup
+{}
+    io := Open(DataPath * fname, "r");
+    data := AssociativeArray();
+    
+    line := Gets(io);
+
+    // If the file is empty, the return value is moot.
+    if IsEof(line) then
+        return MonStgElt;
+    end if;
+    
+    args := eval("[* " * line * " *]");
+
+    return <Type(x) : x in args>;
+end intrinsic;
+
+intrinsic StringToSeqEnum(str) -> SeqEnum
+{}
+    lst := Split(str, ",");
+    n := #lst;
+    return [StringToInteger(x) : x in lst[2..n-1]];
+end intrinsic;
+
+intrinsic SplitAtFirstComma(str) -> MonStgElt, MonStgElt
+{}
+    i := Index(str, ",");
+    keystr   := str[1..i-1];
+    valuestr := str[i+1..#str];
+    return keystr, valuestr;
+end intrinsic;
+
+intrinsic GenericSplitterParser(str) -> Any, Any
+{}
+    args := eval("[* " * str * " *]");
+    assert #args eq 2;
+    return args[1], args[2];
+end intrinsic;
+
+intrinsic GenericParser(str) -> Any
+{}
+    return eval str;
+end intrinsic;
+    
+intrinsic ReadCSVWithTypes(fname, keyType::Cat, valueType::Cat :
+                           DataPath:=DatabaseDirectory(),
+                           FunctionOnLoad := func<x|x>) -> Assoc
+{}
+    io := Open(DataPath * fname, "r");
+    data := AssociativeArray();
+
+    case keyType:
+    when RngIntElt: KeyParser := StringToInteger; Splitter:=SplitAtFirstComma;
+    else: KeyParser := func<x|x>; Splitter:=GenericSplitterParser;
+    end case;
+                
+    case valueType:
+    when RngIntElt: ValueParser := StringToInteger;
+    when SeqEnum:   ValueParser := StringToSeqEnum;
+    when MonStgElt: ValueParser := func<x|x>;
+    else: ValueParser := GenericParser;
+    end case;
+
+    // Override the Value parser if we have a generic Keys
+    if Splitter eq GenericSplitterParser then
+        ValueParser := func<x|x>;
+    end if;
+
+    while true do
+        line := Gets(io);
+        if IsEof(line) then break; end if;
+        keystr, valuestr := Splitter(line);
+        data[KeyParser(keystr)] := FunctionOnLoad(ValueParser(valuestr));
+    end while;
+    return data;
+    
+end intrinsic;
+
+
 intrinsic ReadCSV(fname : DataPath:=DatabaseDirectory(), FunctionOnLoad:=func<x|x>) -> Assoc
 {}
+    types := DetermineReadTypes(DataPath, fname);
+
+    if #types eq 2 then
+        return ReadCSVWithTypes(fname, types[1], types[2] :
+                                DataPath:=DataPath, FunctionOnLoad:=FunctionOnLoad);
+    end if;
+    
     io := Open(DataPath * fname, "r");
     data := AssociativeArray();
     while true do
