@@ -417,11 +417,11 @@ intrinsic _ManageBitListSmoothOptions(orbdata : BitList:=false, OnlySmooth:=fals
         // Check for the cache. Otherwise, use IsSmooth.
         try
             fname := "differentiability/smooth/smooth.csv";
-            smoothIndices := Keys(ReadCSV(fname));
-            filterer := func<i, j | j in smoothIndices>;
+            smoothIndices := Keys(ReadCSVWithTypes(fname, RngIntElt, MonStgElt));
+            filterer := func<i, j, seen | (seen + j) in smoothIndices>;
         
         catch e
-            filterer := func<i, j | IsSmooth(orbdata_cubics[i][j])>;
+            filterer := func<i, j, seen | IsSmooth(orbdata_cubics[i][j])>;
         end try;
         
     else
@@ -442,7 +442,7 @@ intrinsic _ManageBitListSmoothOptions(orbdata : BitList:=false, OnlySmooth:=fals
         lstNew := [];
         for j in [1..#orbdata[i]] do
             // Get the right things associated to (i,j)
-            if filterer(i,j) then
+            if filterer(i,j,seenElements) then
                 Append(~lstNew, selector[i][j]);
             end if;                       
         end for;
