@@ -602,9 +602,13 @@ end intrinsic;
 
 intrinsic StringToSeqEnum(str) -> SeqEnum
 {}
-    lst := Split(str, ",");
-    n := #lst;
-    return [StringToInteger(x) : x in lst[2..n-1]];
+    // Strip off the left/right brackets.
+    leftBrac  := Index(str, "[");
+    rightBrac := Index(str, "]");
+
+    // Parse the integer sequence.
+    lst := Split(str[leftBrac+1..rightBrac-1], ",");    
+    return [StringToInteger(x) : x in lst];
 end intrinsic;
 
 intrinsic SplitAtFirstComma(str) -> MonStgElt, MonStgElt
