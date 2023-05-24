@@ -400,8 +400,7 @@ end intrinsic;
 /////////////////////////////////////////////////
 //
 // Database
-//
-/////////////////////////////////////////////////
+///////////////////////////////////////////////////
 
 intrinsic _ManageBitListSmoothOptions(orbdata : BitList:=false, OnlySmooth:=false) -> SeqEnum
 {}
@@ -425,7 +424,7 @@ intrinsic _ManageBitListSmoothOptions(orbdata : BitList:=false, OnlySmooth:=fals
         end try;
         
     else
-        filterer := func<i, j | true>;
+        filterer := func<i, j, seen | true>;
     end if;
 
     // Select return type via bitlist option
@@ -545,7 +544,7 @@ intrinsic ReadZetaFunctions() -> Assoc
     fname := "zeta_functions/zeta_coefficients.csv";
     R<t> := PolynomialRing(Rationals());
 
-    // zetafunctions[k] will be Q(t/4), where Q(t) is characterisitc polynomial of frobenius
+    // zetafunctions[k] will be Q(t), the characterisitc polynomial of frobenius
     // acting on on H^4_prim(X, Q_l(2)).
     A := ReadCSV(fname);
     B := AssociativeArray();
@@ -608,7 +607,7 @@ intrinsic StringToSeqEnum(str) -> SeqEnum
 
     // Parse the integer sequence.
     lst := Split(str[leftBrac+1..rightBrac-1], ",");    
-    return [StringToInteger(x) : x in lst];
+    return [StringToRational(x) : x in lst];
 end intrinsic;
 
 intrinsic SplitAtFirstComma(str) -> MonStgElt, MonStgElt
@@ -644,7 +643,8 @@ intrinsic ReadCSVWithTypes(fname, keyType::Cat, valueType::Cat :
     end case;
                 
     case valueType:
-    when RngIntElt: ValueParser := StringToInteger;
+    when RngIntElt: ValueParser := StringToRational;
+    when FldRatElt: ValueParser := StringToRational;
     when SeqEnum:   ValueParser := StringToSeqEnum;
     when MonStgElt: ValueParser := func<x|x>;
     else: ValueParser := GenericParser;
@@ -955,6 +955,22 @@ intrinsic IrrationalFactor(f :: RngUPolElt) -> RngUPolElt
     return q;    
 end intrinsic;
 
+
+intrinsic AlgebraicRank(f :: RngUPolElt) -> RngUPolElt
+{Given a Weil polynomia of the primitive cohomology of a cubic fourfold X, return the rank of the algebraic CH2(X).}
+    return 23 - Degree(IrrationalFactor(f));
+end intrinsic;
+
+
+
+
+intrinsic GeometricRank(f :: RngUPolElt) -> RngUPolElt
+{Given a Weil polynomial of the primitive cohomology of a cubic fourfold X, return the rank of the geometric CH2(X).}
+    return 23- TranscendentalRank(f);
+end intrinsic;
+
+
+
 intrinsic TateTwist(f::RngUPolElt, j::FldRatElt : q:=2) -> RngUPolElt
 {Scale the roots of f by 2^(-j)}
     require Denominator(j) eq 1 : "Not implmented for non-integral j.";
@@ -1044,7 +1060,7 @@ end intrinsic;
 
 
 intrinsic IsOrdinary(f :: RngUPolElt : Weil:=false) -> Any
-{WARNING: This function is not implemented correctly.}    
+{Given the L polynomial of a cubic fourfold over F2, determine if the cubic fourfold has height 1 (i.e. is ordinary)}    
     g := Weil select CubicWeilPolynomialToLPolynomial(f) else f;
     NP := LowerVertices(NewtonPolygon(g, 2));
 

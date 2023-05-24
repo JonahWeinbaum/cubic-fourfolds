@@ -3,8 +3,8 @@ AttachSpec("../CubicLib/CubicLib.spec");
 ////////////////////////////////////////////////////////////////////////////////
 // Task 1 : Count Kedlaya-Sutherland objects and check out numbers match theirs.
 
-fileLines := ReadLines(DatabaseDirectory() * "zeta_functions/kedlaya_sutherland_list.csv");
-transPolys := [Polynomial(eval(line)) : line in fileLines];
+fileLines := Keys(ReadCSV("zeta_functions/kedlaya_sutherland_list.csv"));
+transPolys := [Polynomial(line) : line in fileLines];
 
 // To count properly, we need to count the cyclotomic polynomials of each degree
 // and count partitions.
@@ -27,7 +27,7 @@ assert #weilPolySet eq 86472;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Task 3 : Count the number of zeta functions from our database.
+// Task 3 : Count the number of K3-type zeta functions from our database.
 
 function KSNormalization(f)
     return 2 * f / Evaluate(f, 0);
@@ -121,10 +121,9 @@ task4values := {Evaluate(TranscendentalFactor(g), 1) : g in task4};
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Task 5 : Do our own version of Honda-Tate for cubic 4-folds. That is, list
-//          all the things that could potentially be the Weil polynomial of a
-//          cubic fourfold.
+// Task 5 : Verify the conjecture of Elsenhans and Jahnel that 
 
+atvs := {IsSquare(Evaluate(ourWeilPolys[k], -1)) : k in Keys(ourWeilPolys)};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task 6 : Try to find examples with negative point counts.
