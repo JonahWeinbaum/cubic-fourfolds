@@ -1,6 +1,6 @@
-/// We'll use the filtration V > Wp > W to compute a complete set of orbit representatives for G acting on V
+// We'll use the filtration V > Wp > W to compute a complete set of orbit representatives for
+// G acting on V
 
-load "dataprocessing.m";
 
 k := FiniteField(2);
 G := GL(6, k);
@@ -90,7 +90,7 @@ print "Starting orbit computation...";
 
 for i in [1..85] do
 	
-    fname := Sprintf("orbitreps-%o.data", i);
+    fname := Sprintf(OrbitDataDirectory() * "orbitreps-%o.data", i);
     file := Open(fname, "w");
 
     // Construct the restriction G-module

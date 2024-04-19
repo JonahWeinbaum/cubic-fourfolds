@@ -1,4 +1,4 @@
-/// We'll use the filtration V > Wp > W to compute all of the stabilizers of the orbits of G on V/W
+// We'll use the filtration V > Wp > W to compute all of the stabilizers of the orbits of G on V/W
  
 k := FiniteField(2);
 G := GL(6, k);
@@ -451,7 +451,7 @@ for i in [1..84] do
     end for;
 
     // Save the output for later
-    fname := Sprintf("data/orbit-%o.data", i);
+    fname := Sprintf(OrbitDataDirectory() * "orbit-partial-filtration-%o.data", i);
     Write(fname, orbreps_i);
     print "Computation ", i, "/84 complete.";
 end for;

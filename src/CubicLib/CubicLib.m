@@ -368,8 +368,8 @@ end intrinsic;
 //
 /////////////////////////////////////////////////
 
-intrinsic serialize(f :: RngMPolElt) -> .
-{Takes a cubic and returns a customized serialization into bytes.}
+intrinsic serialize(f :: ModGrpElt) -> .
+{Given a module element representing a cubic over F2, returns a customized serialization into bytes.}
     byteseq := [];
     for i in [0..6] do
         n := 1;
@@ -529,6 +529,11 @@ end intrinsic;
 intrinsic DatabaseDirectory() -> MonStgElt
 {Return the absolute path to the database folder.}
     return DATABASE_DIRECTORY;
+end intrinsic;
+
+intrinsic OrbitDataDirectory() -> MonStgElt
+{Return the absolute path to the orbit data folder.}
+    return ORBIT_DATA_DIRECTORY;
 end intrinsic;
 
 intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
