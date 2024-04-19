@@ -14,7 +14,8 @@ the `surveys/` directory.
 ## Installation
 
 1. Clone this repository.
-2. Use `AttachSpec(".../cubic-fourfolds/CubicLib/CubicLib.spec");`
+2. run `source install.sh` to create data directories and download arXiv data.
+3. Use `AttachSpec(".../cubic-fourfolds/src/CubicLib/CubicLib.spec");`
 
 # Repository contents
 
