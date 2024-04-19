@@ -386,7 +386,7 @@ intrinsic serialize(f :: ModGrpElt) -> .
     return byteseq;
 end intrinsic;
 
-intrinsic deserialize(byteseq) -> RngMPolElt
+intrinsic deserialize(byteseq) -> .
 {Takes a byte sequence and returns the corresponding cubic polynomial.}
     seq := [];
     for byte in byteseq do
