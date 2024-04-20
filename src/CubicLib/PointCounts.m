@@ -64,12 +64,6 @@ echforms := lines;
 ptsonlines := AssociativeArray();
 monoevaluated := AssociativeArray();
 
-linesThroughIndices := AssociativeArray();
-for form in Keys(monoevaluated) do
-    linesThroughIndices[form] := Index(lines, form);
-end for;
-
-
 //Loop over all lines
 for form in echforms do 
     nullsp := NullspaceOfTranspose(form);
@@ -99,6 +93,13 @@ for form in echforms do
         end for;
     end for;
 end for;
+
+// Cache the indices.
+linesThroughIndices := AssociativeArray();
+for form in Keys(monoevaluated) do
+    linesThroughIndices[form] := Index(lines, form);
+end for;
+
 
 function paritycalc(bitstr)
     parity := false;
