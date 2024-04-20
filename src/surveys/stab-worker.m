@@ -8,9 +8,8 @@ AttachSpec("../CubicLib/CubicLib.spec");
 function ReportOrbitSizes(tuple)
 
     index := tuple[2];
-    blist := tuple[1];
+    f := tuple[1];
     
-    f := BitListToCubic(blist);
     try
 	a := CubicOrbitSize(f);
 	ok_write := WriteOrbitSizeData(index, a);

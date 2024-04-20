@@ -8,9 +8,8 @@ AttachSpec("~/magma-parallel-cookbook/spec");
 function ReportPointCounts(tuple)
 
     index := tuple[2];
-    blist := tuple[1];
+    f := tuple[1];
     
-    f := BitListToCubic(blist);
     try
 	is_smth := IsSmooth(f);
 	if is_smth then
