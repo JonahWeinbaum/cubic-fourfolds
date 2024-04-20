@@ -58,7 +58,7 @@ end intrinsic;
 //
 ////////////////////////////////////////////////////
 
-lines := ReadLinesIndex();    
+lines := ReadLinesIndex();
 echforms := lines;
 
 ptsonlines := AssociativeArray();

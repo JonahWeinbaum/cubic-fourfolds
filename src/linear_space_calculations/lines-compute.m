@@ -64,10 +64,10 @@ P5<[x]> := ProjectiveSpace(k, 5);
 R := CoordinateRing(P5);
 V, Bit := GModule(G, R, 3);
 
-// Compute lines for all cubics in database
+// Compute lines through all cubics in database. Store the indices for more efficient loading.
 for i in [1..85] do
     o := orbdata[i];
-    linedata := [LinesThrough(f) : f in o];
+    linedata := [LinesThrough(f : ReturnIndices) : f in o];
     print i;
 
     // Write to file.
