@@ -400,6 +400,7 @@ end intrinsic;
 /////////////////////////////////////////////////
 //
 // Database
+//
 ///////////////////////////////////////////////////
 
 intrinsic _ManageBitListSmoothOptions(orbdata : BitList:=false, OnlySmooth:=false) -> SeqEnum
@@ -458,7 +459,24 @@ end intrinsic;
 intrinsic LoadCubicOrbitData(: RemoveZero:=true, Flat:=false, Quick:=false, BitList:=false,
                                OnlySmooth:=false, Verbose:=false)
           -> SeqEnum
-{Loads the precomputed orbit data.}
+{Loads the precomputed orbit data.
+
+Parameters:
+
+    RemoveZero -- Whether or not to keep the zero orbit.
+    Flat       -- If true, returns a single flattened list of orbit representatives.
+                  Otherwise, a list of lists is returned, where each list corresponds to an orbit
+                  over one of the cosets from the filtration.
+
+    Quick      -- If true, return only the initial bit of the data. Useful if one does not want to
+                  wait for the entire dataset to load.
+
+    BitList    -- If true, returns the cubics as a sequence of coefficients. Otherwise, returns
+                  cubic polynomials.
+
+    OnlySmooth -- If true, returns only the smooth cubics.
+    Verbose    -- Verbose parameter.
+}
 
     ZEROCUBIC := [0 : i in [1..56]];
     if Verbose then print "loading data..."; end if;
