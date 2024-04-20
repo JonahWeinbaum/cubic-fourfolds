@@ -1,7 +1,7 @@
 // Same as the manager process.
 host := "localhost";
 port := 10000;
-Attach("CubicLib.m");
+AttachSpec("../CubicLib/CubicLib.spec");
 
 // load "computecharpoly.m"; // 2 minutes load.
 

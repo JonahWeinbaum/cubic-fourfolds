@@ -1,10 +1,9 @@
 // Same as the manager process.
 host := "localhost";
 port := 10000;
-Attach("CubicLib.m");
 
-load "computecharpoly.m"; // 2 minutes load.
-
+AttachSpec("../CubicLib/CubicLib.spec");
+AttachSpec("~/magma-parallel-cookbook/spec");
 
 function ReportPointCounts(tuple)
 

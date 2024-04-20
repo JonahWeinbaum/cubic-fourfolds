@@ -1,9 +1,8 @@
 // Host/port data.
 host := "localhost";
 port := 10000;
-Attach("CubicLib.m");
 
-
+AttachSpec("../CubicLib/CubicLib.spec");
 AttachSpec("~/magma-parallel-cookbook/spec");
 socket := Socket(: LocalHost := "localhost", LocalPort := 10000);
 
