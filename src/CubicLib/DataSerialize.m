@@ -59,18 +59,18 @@ intrinsic ReadLinesIndex() -> SeqEnum
 
     while true do
        //Deserialize 3 Bytes and Advance File Pointer
-    for i in [1..3] do
-        byte := StringToCode(file[currloc]);
-        seq cat:= [byte];
-        currloc := currloc + 1;
+        for i in [1..3] do
+            byte := StringToCode(file[currloc]);
+            seq cat:= [byte];
+            currloc := currloc + 1;
 
-    end for;
+        end for;
         Append(~lines, DeserializeLine(seq));
         seq := [];
 
-    if currloc eq #file + 1 then
-        break;
-    end if;
+        if currloc eq #file + 1 then
+            break;
+        end if;
 
     end while;
     return lines;
@@ -84,7 +84,7 @@ LINE_BIT_NUM := 10;  //<The number of bits used to express a line index
 PLANE_BIT_NUM := 11; //<The number of btis used to express a plane index
 
 intrinsic SerializeLinesThrough(linesthrough :: SeqEnum) -> SeqEnum
-{Given a sequence of inidces correspondign to forms representing lines through a cubic, convert it into a sequence of bytes.}
+{Given a sequence of inidces corresponding to forms representing lines through a cubic, convert it into a sequence of bytes.}
     byteseq := [];
     bitsseq := [];
     bits_num := Ceiling((#linesthrough + 1)*LINE_BIT_NUM / 8) * 8;
