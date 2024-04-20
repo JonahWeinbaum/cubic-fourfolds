@@ -115,37 +115,25 @@ end function;
 */
 
 
-orbdata := LoadCubicOrbitData(: Flat:=true);
+orbdata := LoadCubicOrbitData(: Flat:=false);
 
 k := FiniteField(2);
 G := GL(6, k);
 P5<[x]> := ProjectiveSpace(k, 5);
 R := CoordinateRing(P5);
-
 V, Bit := GModule(G, R, 3);
 
-
 // Compute lines for all cubics in database
-orbdata := [orbdata[i] : i in [1..100]];
-linesdata := [];
-
 for i in [1..85] do
     o := orbdata[i];
-    time linesdata cat:= [[LinesThrough(f) : f in o ] ];
-    i;
-end for;
+    linedata := [LinesThrough(f) : f in o];
+    print i;
 
-Ar := AssociativeArray();
-linesseq := Setseq(lines);
- 
-for i in [1..#linesseq] do
-    Ar[linesseq[i]] := i;
+    // Write to file.
+    datadir := DatabaseDirectory();
+    subpath := "linear_subspaces/lines_through_cubics/";
+    fname := Sprintf("lines-%o.data", i);
+    PrintFile(datadir * subpath * fname, linedata);
 end for;
-
-for i in [1..85] do
-    fname := Sprintf("../data/lines-%o.data", i);
-    PrintFile(fname, linesdata[i]);
-end for;
-
 
 
