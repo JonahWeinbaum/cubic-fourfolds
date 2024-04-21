@@ -6,7 +6,7 @@ set -o errexit
 # Set up the directories for data
 mkdir database
 cd database
-mkdir differentiability group_action linear_subspaces zeta zeta_functions
+mkdir differentiability group_action linear_subspaces zeta_functions
 
 cd differentiability
 mkdir singular smooth

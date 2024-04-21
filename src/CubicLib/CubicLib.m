@@ -15,12 +15,13 @@
 
 PATH_TO_LIB := PathToLib();
 
-ORBIT_DATA_DIRECTORY := PATH_TO_LIB * 
-			"../../database/group_action/orbit_representatives/" *
+DATABASE_DIRECTORY := PATH_TO_LIB * "../../database/";
+ZETA_DIRECTORY := DATABASE_DIRECTORY * "zeta_functions/";
+GROUP_ACTION_DIRECTORY := DATABASE_DIRECTORY * "group_action/";
+ORBIT_DATA_DIRECTORY := GROUP_ACTION_DIRECTORY * 
+			"orbit_representatives/" *
                         "orbit_representative_in_V/";
 
-DATABASE_DIRECTORY := PATH_TO_LIB * "../../database/";
-DATA_DIRECTORY := PATH_TO_LIB * "../../database/zeta/";
 CUBIC_ID_FILE := "orbrep.csv";
 ISSMOOTH_FILE := "smooth.csv";
 POINT_COUNTS_FILE := "point_counts.csv";
@@ -556,9 +557,9 @@ end intrinsic;
 
 intrinsic WriteZetaData(i, issmooth, pointcounts) -> RngIntElt
 {}
-    Write(DATA_DIRECTORY * CUBIC_ID_FILE, Sprintf("%o", i));
-    Write(DATA_DIRECTORY * ISSMOOTH_FILE, Sprintf("%o, %o", i, issmooth));
-    Write(DATA_DIRECTORY * POINT_COUNTS_FILE, Sprintf("%o, %o", i, pointcounts));    
+    Write(ZETA_DIRECTORY * CUBIC_ID_FILE, Sprintf("%o", i));
+    Write(ZETA_DIRECTORY * ISSMOOTH_FILE, Sprintf("%o, %o", i, issmooth));
+    Write(ZETA_DIRECTORY * POINT_COUNTS_FILE, Sprintf("%o, %o", i, pointcounts));    
     return 0;
 end intrinsic;
 
@@ -580,7 +581,7 @@ end intrinsic;
 
 intrinsic WriteOrbitSizeData(i, stabilizersize) -> RngIntElt
 {}
-    Write(DATA_DIRECTORY * ORBIT_SIZE_FILE, Sprintf("%o, %o", i, stabilizersize));
+    Write(GROUP_ACTION_DIRECTORY * ORBIT_SIZE_FILE, Sprintf("%o, %o", i, stabilizersize));
     return 0;
 end intrinsic;
 
@@ -601,7 +602,7 @@ end intrinsic;
 
 intrinsic ReportError(index, err)
 {Write a report of the error to the file.}
-    Write(DATA_DIRECTORY * ERROR_FILE, Sprintf("%o, %o", index, err));
+    Write(ZETA_DIRECTORY * ERROR_FILE, Sprintf("%o, %o", index, err));
     return;
 end intrinsic;
 
