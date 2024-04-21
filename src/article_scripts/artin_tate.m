@@ -22,7 +22,8 @@ for k in Keys(zetafunctions) do
 
     // The numerator is always 1, which is a good sign for sure.
 
-    // Our guess is off by a factor of 9. This factor is apparently explained by some motivic construction of the base field.
+    // Our guess is off by a factor of 9. This factor is apparently explained by some motivic
+    // construction of the base field.
 
     // H^{3,1} might collapse (by 1) in the supersingular case.
 end for;
