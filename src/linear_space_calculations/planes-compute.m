@@ -14,7 +14,7 @@ for i in  [1..#planes] do
 end for;
 
 
-function LoadLinesThroughCubics()
+function LoadLinesThroughCubics( : ReturnIndices:=false)
     // If the lines-compute.m script has been run, load the results.
     // i.e., load a list of lists `L` such that L[i][j] is the set of lines through the
     // (i,j)-th orbit representative (using the non-flattened indexing of orbit representatives).
@@ -31,8 +31,12 @@ function LoadLinesThroughCubics()
         linesThroughLists := eval fcontents;
 
         // Obtain the corresponding echelon forms.
-        subresult := [[echforms[ind] : ind in indices] : indices in linesThroughLists];
-
+        if ReturnIndices then
+            subresult := [Set(indices) : indices in linesThroughLists];
+        else
+            subresult := [{echforms[ind] : ind in indices} : indices in linesThroughLists];
+        end if;
+        
         // Append.
         Append(~result, subresult);
     end for;
@@ -40,45 +44,42 @@ function LoadLinesThroughCubics()
     return result;
 end function;
 
-linesthrough := LoadLinesThoughCubics();
+linesthrough := LoadLinesThroughCubics(:ReturnIndices);
+assert #linesthrough eq 85;
 
-// The plane P goes through the i-th cubic if and only if four lines on that plane are contained
-// in the i-th cubic. (The indexing is with respect to whatever indexing was used for
-// linesthrough.)
-planesthrough := [];
-time for i in [1..#linesthrough] do
-    planesthrough[i] := [];
-    for j in [1..#planes] do
-        if fourlines[j] subset linesthrough[i] then
-            Append(~planesthrough[i], planes[j]);
-        end if;
+// The plane P goes through the (i,j)-th cubic if and only if four lines on that plane are
+// contained in the (i,j)-th cubic. (The indexing is with respect to the usual (i,j)-indexing
+// for orbit representatives obtained from the filtration, or equivalently,
+// the (i,j)-th cubic is LoadCubicOrbitData(: Flat:=false)[i][j];
+
+// File info.
+SetColumns(0);
+datadir := DatabaseDirectory();
+subpath := "linear_subspaces/planes_through_cubics/";
+
+for i in [1..#linesthrough] do
+
+    subplanesthrough := [];
+    for j in [1..#linesthrough[i]] do
+        subplanesthrough[j] := [];
+
+        // Check if each plane is contained in the (i,j)-th cubic via the lines.
+        // If so, save the index.
+        for ll in [1..#planes] do
+            if fourlines[ll] subset linesthrough[i][j] then
+                Append(~subplanesthrough[j], ll);
+            end if;
+        end for;
     end for;
 
+    // Write to file.
+    fname := Sprintf("planes-%o.data", i);
+    Write(datadir * subpath * fname, subplanesthrough);
+    
     // Report.
-    if (i mod 10000) eq 0 then print i; end if;
+    print Sprintf("Completed %o / %o tasks.", i, #linesthrough);
 end for;
 print "Incidence computation for planes finished.";
-
-
-// Compute indices for more efficient storage.
-planesthroughindexed := [];
-planeindices := AssociativeArray();
-for i in [1..#planes] do
-    planeindices[planes[i]] := i;
-end for;
-
-for i in [1..#planesthrough] do
-    planesthroughindexed[i] := [planeindices[p]: p in planesthrough[i]];
-end for;
-
-// Save the data.
-SetColumns(0);
-for i in [1..#planesthroughindexed] do
-    datadir := DatabaseDirectory();
-    subpath := "linear_subspaces/planes_through_cubics/";
-    fname := Sprintf("planes-%o.data", i);
-    Write(filename, planesthroughindexed[i]);
-end for;
 
 
 
