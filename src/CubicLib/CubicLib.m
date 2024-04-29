@@ -836,9 +836,14 @@ intrinsic HalfWeil(counts::SeqEnum[RngIntElt]) -> SeqEnum[FldRatElt]
     return [1] cat c;
 end intrinsic;
 
-intrinsic IsSignAmbiguous(halfWeil) -> BoolElt, RngIntElt
-{Determine if there is an ambiguity in the functional equation. Also return the
-"Badness" rating -- the largest integer such that the coefficient of the degree 11+i term is zero.}
+intrinsic IsSignAmbiguous(halfWeil) -> BoolElt, RngIntElt, RngIntElt
+{From the first 11 coeffients of the Weil polynomial, 
+determine if there is an ambiguity in the functional equation. Also return the
+"Badness" rating -- the largest integer such that the coefficient of the degree 11+i term is 
+zero.
+
+If the sign is not ambiguous, return the sign as the third argument. The second argument
+is set to -1 in this case (i.e., nonexistent badness).}
 
     if halfWeil[12] ne 0 then return false, -1; end if;
     
@@ -857,10 +862,22 @@ intrinsic IsSignAmbiguous(halfWeil) -> BoolElt, RngIntElt
         end while;
         return true, badness-1;
     else
-        return false, -1;
+	sign := isWeil1 select 1 else -1;
+        return false, -1, sign;
     end if;
 end intrinsic;
 
+intrinsic IsSignAmbiguous(list::SeqEnum[RngIntElt]) -> BoolElt, RngIntElt
+{Given a list of point counts over F_2^k, k = 1,..., 11,
+determine if there is an ambiguity in the functional equation. Also return the
+"Badness" rating -- the largest integer such that the coefficient of the degree 11+i term is 
+zero.
+
+If the sign is not ambiguous, return the sign as the third argument. The second argument
+is set to -1 in this case (i.e., nonexistent badness).}
+    return IsSignAmbiguous(HalfWeil(list));    
+end intrinsic;
+    
 intrinsic Badness(halfWeil) -> RngIntElt
 {}
     a, b := IsSignAmbiguous(halfWeil);
@@ -873,59 +890,25 @@ intrinsic DoesArtinTateHelp(halfWeil) -> BoolElt
     return not (IsSquare(atv) or IsSquare(2*atv));
 end intrinsic;
 
-intrinsic Charpoly(list::SeqEnum[RngIntElt] : FailIfAmbiguous:=true) -> RngUPolElt
-{input list of point counts over F_2^k, k = 1,..., 11, 
-returns the characteristic polynomial of Frobenius acting on nonprimitive cohomology.}
+
+    
+intrinsic Charpoly(list::SeqEnum[RngIntElt], sign::RngIntElt) -> RngUPolElt
+{Given a list of point counts over F_2^k, k = 1,..., 11, and a sign for the functional equation,
+returns the characteristic polynomial of Frobenius acting on primitive cohomology.}
     
     // p := t^22 + &+[c[i]*t^(22-i) : i in [1..11] ];
     // g := CONSTQt_ ! (t^22 * Evaluate(p, 1/t));
 
     c := HalfWeil(list);
-    
-    if c[11+1] ne 0 then
-        return WeilPolynomialFromHalf(c, 1);
-    end if;
+    return WeilPolynomialFromHalf(c, sign);
+end intrinsic;
 
 
-    // Try both signs. See if only one works.
-    poly1 := WeilPolynomialFromHalf(c,  1);
-    poly2 := WeilPolynomialFromHalf(c, -1);
-
-    isWeil1 := HasAllRootsOnUnitCircle(poly1);
-    isWeil2 := HasAllRootsOnUnitCircle(poly2);
-    
-    if isWeil1 and not isWeil2 then
-        return poly1;
-    elif isWeil2 and not isWeil1 then
-        return poly2;
-
-    elif isWeil1 and isWeil2 then
-
-        if FailIfAmbiguous then
-            error "Ambiguous sign of functional equation. Cannot determine zeta functions.";
-        else
-            return -1; // Obviously wrong.
-        end if;
-
-        error "Not implemented.";
-        
-        // TODO: The indexing is wrong
-        /*
-          p12  := PointCounts(cubic, 12);
-          tr12 := (p12 - 1 - 2^12 - 4^12 - 8^12 - 16^12)/4^12;
-          c12  := (tr12 + &+[c[i]*tr[12-i] : i in [1..12-1]])/(-12);
-
-        if Coefficient(poly1, 12) eq c12 and c12 ne 0 then 
-        return poly1; 
-        elif Coefficient(poly2, 12) eq c12 and c12 ne 0 then 
-        return poly2;
-        else
-        error "counting up to 2^12 does not cut it";
-        end if;
-       */
-    else
-        error "No valid sign choice for given point counts.";
-    end if;    
+intrinsic ZetaFunctionOfCubic(cubic :: RngMPolElt) -> RngUPolElt
+{Given a smooth cubic form in six variables, return the primitive Weil polynomial.}
+    counts := PointCounts(cubic);
+    sign := FunctionalEquationSign(cubic);
+    return WeilPolynomialFromHalf(HalfWeil(counts),  sign);
 end intrinsic;
 
 
