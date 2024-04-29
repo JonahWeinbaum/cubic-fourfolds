@@ -41,6 +41,8 @@ if False:
 # Cubic fourfolds.
 
 if True:
+    # Actually save all the transcendental parts in the list.
+    # Also change the name to create the kedlaya-sutherland-list.csv file.
     for i in range(1, 12):
         ans = [polRing(2)]
         t = time.time()
