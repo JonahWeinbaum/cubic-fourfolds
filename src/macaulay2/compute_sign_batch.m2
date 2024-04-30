@@ -6,5 +6,3 @@ scanLines(l -> theseq = append(theseq, discriminant value l % 8), "input.m2");
 
 print theseq;
 exit;
--- "output.m2" << theseq << endl << close; --
-

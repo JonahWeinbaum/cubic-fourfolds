@@ -819,7 +819,7 @@ intrinsic BothWeilPolynomials(coeffs) -> Tup
 end intrinsic;
 
 
-intrinsic HalfWeil(counts::SeqEnum[RngIntElt]) -> SeqEnum[FldRatElt]
+intrinsic HalfWeil(counts::SeqEnum[FldRatElt]) -> SeqEnum[FldRatElt]
 {}
     // Divide by the zeta function for P4. (Recall there is a Log.)
     // Also, dividing by 4^m amounts to taking a Tate twist (evaluating t => t/4).
@@ -891,8 +891,8 @@ intrinsic DoesArtinTateHelp(halfWeil) -> BoolElt
 end intrinsic;
 
 
-    
-intrinsic Charpoly(list::SeqEnum[RngIntElt], sign::RngIntElt) -> RngUPolElt
+
+intrinsic Charpoly(list::SeqEnum, sign::RngIntElt) -> RngUPolElt
 {Given a list of point counts over F_2^k, k = 1,..., 11, and a sign for the functional equation,
 returns the characteristic polynomial of Frobenius acting on primitive cohomology.}
     
