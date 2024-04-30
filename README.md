@@ -3,10 +3,10 @@
 This repository houses the code used to work with cubic fourfolds over F2. The vast majority
 of the software is written in the Magma computer algebra language.
 
-## Dependancies
+## Dependencies
 
 - Macaulay2 (For `FunctionalEquationSign`)
-- Sage (For certain scripts in `article-scripts`)
+- Sage 9+ (For certain scripts in `article-scripts`)
 - The `magma-parallel-cookbook` is needed to run the parallelized versions of the scripts in
 the `surveys/` directory.
 - C++ for point_counting functionality. Specifically, `g++` must be available.
@@ -15,7 +15,26 @@ the `surveys/` directory.
 
 1. Clone this repository.
 2. run `source install.sh` to create data directories and download arXiv data.
-3. Use `AttachSpec(".../cubic-fourfolds/src/CubicLib/CubicLib.spec");`
+3. Use `AttachSpec(".../cubic-fourfolds/src/CubicLib/CubicLib.spec");` (Or attach in your `.magmarc` file.)
+
+## Generating the data from scratch
+
+Included in this library is the ability to replicate the datasets of the associated to the associated 
+cubic fourfolds paper. The database is built up in stages. We provide some of the data files on arXiv, 
+which are downloaded automatically with the installation script. Nevertheless, if you need to generate
+the data from scratch, run the scripts indicated in the table below (in order from top to bottom).
+
+| Type     | Script                              | Run inside directory | Generated file(s)                                      |
+|----------|-------------------------------------|----------------------|--------------------------------------------------------|
+| Magma    | orbitsfromfullfiltration.m          | orbit_calculation    | orbitreps-X.data                                       |
+| Magma    | smooth-single.m                     | surveys              | smooth.csv, singular.csv                               |
+| Magma    | stabsurvey.m (Parallelized)         | surveys              | stabilizer\_counts.csv                                 |
+| Magma    | stabsurvey-single.m (Single thread) | surveys              | stabilizer\_counts.csv                                 |
+| Magma    | zetasurvey.m (Parallelized)         | surveys              | point\_counts.csv                                      |
+| Magma    | zetasurvey-single.m (Single thread) | surveys              | point\_counts.csv                                      |
+| Magma/M2 | compute\_zeta\_functions.m          | article\_scripts     | zeta\_coefficients.csv                                 |
+| Sage     | weil\_search.sage                   | article\_scripts     | transcendental\_weil\_polynomials\_up\_to\_deg\_22.csv |
+
 
 # Repository contents
 
@@ -116,6 +135,7 @@ PointCounts;
 
 // Working with Polynomials/Zeta functions
 FunctionalEquationSign;
+ZetaFunctionOfCubic;
 Charpoly;
 IsWeilPolynomial;
 TranscendentalFactor;
