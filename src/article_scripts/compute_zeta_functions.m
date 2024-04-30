@@ -68,7 +68,7 @@ time smoothIndices := Setseq(Keys(ReadCSV("differentiability/smooth/smooth.csv")
 //    so one must be careful not to make the batches too large.
 
 BATCH_SIZE := 1000;
-NUM_CUBICS := 4001; // #smoothIndices;
+NUM_CUBICS := #smoothIndices;
 
 istart := 1;
 while istart le NUM_CUBICS do
