@@ -41,7 +41,7 @@ if False:
 # Cubic fourfolds.
 
 if True:
-    for i in range(1, 3): #range(1, 12):
+    for i in range(1, 12):
         ans = [polRing(2)]
         t = time.time()
         c = 0
