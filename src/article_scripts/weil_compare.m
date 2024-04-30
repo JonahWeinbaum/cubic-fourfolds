@@ -3,7 +3,8 @@ AttachSpec("../CubicLib/CubicLib.spec");
 ////////////////////////////////////////////////////////////////////////////////
 // Task 1 : Count Kedlaya-Sutherland objects and check out numbers match theirs.
 
-fileLines := Keys(ReadCSV("zeta_functions/kedlaya_sutherland_list.csv"));
+fname := "transcendental_weil_polynomials_up_to_deg_22.csv";
+fileLines := Keys(ReadCSV("zeta_functions/" * fname));
 transPolys := [Polynomial(line) : line in fileLines];
 
 // To count properly, we need to count the cyclotomic polynomials of each degree

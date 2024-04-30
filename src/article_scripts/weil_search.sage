@@ -41,9 +41,7 @@ if False:
 # Cubic fourfolds.
 
 if True:
-    # Actually save all the transcendental parts in the list.
-    # Also change the name to create the kedlaya-sutherland-list.csv file.
-    for i in range(1, 12):
+    for i in range(1, 3): #range(1, 12):
         ans = [polRing(2)]
         t = time.time()
         c = 0
@@ -58,7 +56,7 @@ if True:
         print(c, "nodes enumerated")
         print("time so far: ", time.time() - t, " seconds")
 
-    with open(datapath + "degree_22_weilpoly_list.txt", "w") as f:
+    with open(datapath + "transcendental_weil_polynomials_up_to_deg_22.csv", "a") as f:
         for i in ans:
             f.write(str(i.list()) + "\n")
 
