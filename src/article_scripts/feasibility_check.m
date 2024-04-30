@@ -52,7 +52,7 @@ expectedLastEntries3 := [
     [N, Y],
     [N, Y],
     [N, Y],
-    [N, Y],
+    [N, N],
     [Y, Y],
     [N, N]    
 ];

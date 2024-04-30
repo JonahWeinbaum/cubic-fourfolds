@@ -264,6 +264,10 @@ doesn't find the optimal composition series.
     return IsFeasible(V : CheckOrbits:=CheckOrbits, Ncores:=Ncores, TimeLimit:=TimeLimit);
 end intrinsic;
 
+function IsFeasibleFactors(factors)
+    return &and [IsFeasibleUnionFind(fac : CheckOrbits:=false) : fac in factors];
+end function;
+
 intrinsic IsFeasible(V::ModGrp                            
                      : CheckOrbits := true,
                        Ncores := 100,
@@ -275,32 +279,31 @@ intrinsic IsFeasible(V::ModGrp
     
     // This can take a while for really big modules. The answer is probably no
     // in this case anyways.
-    found_series := CandidateCompositionSeries(V);
-    return &or [IsFeasibleUnionFind(V : CheckOrbits:=false)
-                : V in {comp[1] : comp in found_series}];
+    found_factors := CandidateCompositionFactors(V);
+    return &or [IsFeasibleFactors(factors) : factors in found_factors];
 end intrinsic;
 
-intrinsic CandidateCompositionSeries(V::ModGrp) -> SeqEnum
+intrinsic CandidateCompositionFactors(V::ModGrp) -> SeqEnum
 {}
     // Look for 10 composition series.
-    found_series := [];
+    found_factors := [];
     found_dims := [];
     
     wait_count := 0;    
     while wait_count lt 10 do
-        comp := CompositionSeries(V);
+        comp, factors := CompositionSeries(V);
         dims := [Dimension(W) : W in comp];
         
         if not dims in found_dims then
             Append(~found_dims, dims);
-            Append(~found_series, comp);
+            Append(~found_factors, factors);
             wait_count := 0;
         else
             wait_count +:= 1;
         end if;
     end while;
 
-    return found_series;
+    return found_factors;
 end intrinsic;
 
 intrinsic IsFeasibleUnionFind(n::RngIntElt, d::RngIntElt, q::RngIntElt
