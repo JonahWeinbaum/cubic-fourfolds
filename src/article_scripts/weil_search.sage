@@ -41,7 +41,7 @@ if False:
 # Cubic fourfolds.
 
 if True:
-    for i in range(1, 12):
+    for i in range(1, 11):
         ans = [polRing(2)]
         t = time.time()
         c = 0
@@ -56,7 +56,7 @@ if True:
         print(c, "nodes enumerated")
         print("time so far: ", time.time() - t, " seconds")
 
-    with open(datapath + "transcendental_weil_polynomials_up_to_deg_22.csv", "a") as f:
-        for i in ans:
-            f.write(str(i.list()) + "\n")
+        with open(datapath + "transcendental_weil_polynomials_up_to_deg_22.csv", "a") as f:
+            for i in ans:
+                f.write(str(i.list()) + "\n")
 
