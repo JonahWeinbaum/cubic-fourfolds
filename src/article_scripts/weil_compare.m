@@ -15,7 +15,7 @@ cyclo := [f : f in [CyclotomicPolynomial(d) : d in [1..100]] | Degree(f) le 21];
 _<T> := PowerSeriesRing(Rationals(), 22);
 comboSeries := &*[1/(1-T^Degree(f)) : f in cyclo];
 
-totalNum := &+[Coefficient(comboSeries, 21-Degree(f)) : f in transPolys];
+totalNum := &+[Coefficient(comboSeries, 21-Degree(f)) : f in transPolys | Degree(f) le 21];
 assert totalNum eq 2971182;
 
 
